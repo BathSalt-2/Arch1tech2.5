@@ -1,0 +1,7 @@
+{
+  "name": "Arch1tech 2.0",
+  "description": "An AI development lab where you create models by conversing with Astrid, your AI co-pilot. The prompt is the product.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

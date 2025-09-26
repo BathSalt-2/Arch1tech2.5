@@ -1,0 +1,63 @@
+import React from 'react';
+import { Card } from './ui/Card';
+import { THEMES } from '../constants';
+import type { ThemeName } from '../types';
+import { Button } from './ui/Button';
+
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentTheme: ThemeName;
+  onThemeChange: (themeName: ThemeName) => void;
+}
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
+  currentTheme,
+  onThemeChange,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <Card
+        className="w-full max-w-md"
+        onClick={e => e.stopPropagation()}
+      >
+        <Card.Header>
+          <Card.Title>Theme Customization</Card.Title>
+          <Card.Description>Personalize your workspace with a new look.</Card.Description>
+        </Card.Header>
+        <Card.Content className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {THEMES.map(theme => (
+            <button
+              key={theme.name}
+              onClick={() => onThemeChange(theme.name)}
+              className={`p-4 border rounded-lg text-center transition-all ${
+                currentTheme === theme.name
+                  ? 'border-[rgb(var(--color-accent-val))] ring-2 ring-[rgb(var(--color-accent-val))]'
+                  : 'border-[rgb(var(--color-border-val)/0.3)] hover:border-[rgb(var(--color-accent-val))]'
+              }`}
+            >
+              <div className="flex justify-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.primary }}></span>
+                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.secondary }}></span>
+                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.accent }}></span>
+              </div>
+              <p className="text-sm font-semibold text-slate-200">{theme.displayName}</p>
+            </button>
+          ))}
+        </Card.Content>
+        <Card.Footer className="flex justify-end">
+          <Button onClick={onClose} className="!bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500">
+            Close
+          </Button>
+        </Card.Footer>
+      </Card>
+    </div>
+  );
+};

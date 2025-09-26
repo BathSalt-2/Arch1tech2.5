@@ -1,6 +1,6 @@
 {
-  "name": "Arch1tech 2.0",
-  "description": "An AI development lab where you create models by conversing with Astrid, your AI co-pilot. The prompt is the product.",
+  "name": "Or4cl3 AI Solutions - The Forge",
+  "description": "The official AI development lab for Or4cl3 AI Solutions. Create next-generation models by conversing with Astrid, your QSCI-based AI co-pilot. The prompt is the product.",
   "requestFramePermissions": [
     "microphone"
   ]

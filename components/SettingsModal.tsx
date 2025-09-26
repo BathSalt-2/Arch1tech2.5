@@ -3,12 +3,14 @@ import { Card } from './ui/Card';
 import { THEMES } from '../constants';
 import type { ThemeName } from '../types';
 import { Button } from './ui/Button';
+import { ShieldCheckIcon } from './icons/Icons';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTheme: ThemeName;
   onThemeChange: (themeName: ThemeName) => void;
+  onShowLicense: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -16,6 +18,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   currentTheme,
   onThemeChange,
+  onShowLicense,
 }) => {
   if (!isOpen) return null;
 
@@ -52,7 +55,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           ))}
         </Card.Content>
-        <Card.Footer className="flex justify-end">
+        <Card.Footer className="flex justify-between items-center">
+          <Button onClick={onShowLicense} className="!bg-transparent hover:!bg-[rgb(var(--color-secondary-val)/0.2)] text-sm font-semibold">
+            <ShieldCheckIcon className="w-4 h-4" />
+            View OOML License
+          </Button>
           <Button onClick={onClose} className="!bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500">
             Close
           </Button>

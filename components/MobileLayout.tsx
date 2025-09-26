@@ -1,39 +1,47 @@
 import React from 'react';
-// FIX: Import UnifiedConfig and Card for conditional rendering.
-import type { ModelConfig, Message, ThemeName, MobileView, UnifiedConfig } from '../types';
+import type { Message, MobileView, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool } from '../types';
 import { DOMAINS } from '../constants';
 import { ConfiguratorPanel } from './ConfiguratorPanel';
-import { VisualizationPanel } from './VisualizationPanel';
 import { ChatPanel } from './ChatPanel';
 import { BottomNavBar } from './BottomNavBar';
 import { Card } from './ui/Card';
+import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
+import { BlueprintPanel } from './BlueprintPanel';
+
+interface LayoutRefs {
+    forgeRef: React.RefObject<HTMLDivElement>;
+    blueprintRef: React.RefObject<HTMLDivElement>;
+    chatRef: React.RefObject<HTMLDivElement>;
+}
 
 interface MobileLayoutProps {
-    // FIX: Update config to be UnifiedConfig.
     config: UnifiedConfig;
-    theme: ThemeName;
     messages: Message[];
     isLoading: boolean;
     isLiveUpdating: boolean;
     prompt: string;
     onPromptChange: (value: string) => void;
-    handleConfigChange: <K extends keyof ModelConfig>(
-        section: K,
-        key: keyof ModelConfig[K],
-        value: ModelConfig[K][keyof ModelConfig[K]]
-    ) => void;
+    handleConfigChange: (section: any, key: any, value: any) => void;
     handleDomainToggle: (domainName: string) => void;
-    handleArchitectClick: () => void;
+    handleAgentConfigChange: (key: keyof Omit<AgentConfig, 'tools' | 'webSearchConfig' | 'type'>, value: any) => void;
+    handleAgentToolToggle: (tool: AgentTool) => void;
+    handleWebSearchConfigChange: (key: keyof WebSearchConfig, value: any) => void;
+    handleArchitectClick: (fullPrompt: string, userText: string) => void;
+    handleRequestReflection: () => void;
     openSaveModal: () => void;
     openPreview: () => void;
     mobileView: MobileView;
     setMobileView: (view: MobileView) => void;
     openGallery: () => void;
+    onboardingStep?: number;
+    onOnboardingAction?: (actionType: any, data?: any) => void;
+    blueprintText: string;
+    isBlueprintLoading: boolean;
+    refs: LayoutRefs;
 }
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
     config,
-    theme,
     messages,
     isLoading,
     isLiveUpdating,
@@ -41,18 +49,30 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
     onPromptChange,
     handleConfigChange,
     handleDomainToggle,
+    handleAgentConfigChange,
+    handleAgentToolToggle,
+    handleWebSearchConfigChange,
     handleArchitectClick,
+    handleRequestReflection,
     openSaveModal,
     openPreview,
     mobileView,
     setMobileView,
-    openGallery
+    openGallery,
+    onboardingStep,
+    onOnboardingAction,
+    blueprintText,
+    isBlueprintLoading,
+    refs,
 }) => {
+    const { forgeRef, blueprintRef, chatRef } = refs;
+
     const renderContent = () => {
         switch (mobileView) {
             case 'chat':
                 return (
                     <ChatPanel
+                        ref={chatRef}
                         messages={messages}
                         isLoading={isLoading}
                         isLiveUpdating={isLiveUpdating}
@@ -62,39 +82,49 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                         config={config}
                         onSave={openSaveModal}
                         onPreview={openPreview}
+                        onReflect={handleRequestReflection}
+                        onboardingStep={onboardingStep}
+                        onOnboardingAction={onOnboardingAction as any}
                     />
                 );
             case 'configure':
-                // FIX: Conditionally render configurator for LLMs or a JSON view for other types.
-                return config.type === 'llm' ? (
-                    <ConfiguratorPanel
-                        config={config}
-                        onConfigChange={handleConfigChange}
-                        onDomainToggle={handleDomainToggle}
-                        domains={DOMAINS}
-                        isLiveUpdating={isLiveUpdating}
-                    />
-                ) : (
-                     <Card className="h-full">
-                        <Card.Header>
-                            <Card.Title>{config.type.charAt(0).toUpperCase() + config.type.slice(1)} Configuration</Card.Title>
-                            <Card.Description>Live updates for this asset type are reflected below.</Card.Description>
-                        </Card.Header>
-                        <Card.Content className="overflow-auto scrollbar-thin">
-                            <pre className="text-xs bg-slate-900/50 p-2 rounded-md">{JSON.stringify(config, null, 2)}</pre>
-                        </Card.Content>
-                    </Card>
-                );
+                switch (config.type) {
+                    case 'llm':
+                        return <ConfiguratorPanel
+                            ref={forgeRef}
+                            config={config as ModelConfig}
+                            onConfigChange={handleConfigChange}
+                            onDomainToggle={handleDomainToggle}
+                            domains={DOMAINS}
+                            isLiveUpdating={isLiveUpdating}
+                        />;
+                    case 'agent':
+                        return <AgentConfiguratorPanel
+                            ref={forgeRef}
+                            config={config as AgentConfig}
+                            onConfigChange={handleAgentConfigChange}
+                            onToolToggle={handleAgentToolToggle}
+                            onWebSearchConfigChange={handleWebSearchConfigChange}
+                            isLiveUpdating={isLiveUpdating}
+                        />;
+                    default:
+                        return <Card className="h-full" ref={forgeRef}>
+                            <Card.Header>
+                                <Card.Title>{config.type.charAt(0).toUpperCase() + config.type.slice(1)} Configuration</Card.Title>
+                                <Card.Description>Live updates for this asset type are reflected below.</Card.Description>
+                            </Card.Header>
+                            <Card.Content className="overflow-auto scrollbar-thin">
+                                <pre className="text-xs bg-slate-900/50 p-2 rounded-md">{JSON.stringify(config, null, 2)}</pre>
+                            </Card.Content>
+                        </Card>;
+                }
             case 'visualize':
-                 // FIX: Conditionally render visualization for LLMs or a placeholder for other types.
-                return config.type === 'llm' ? (
-                    <VisualizationPanel config={config} theme={theme} isLiveUpdating={isLiveUpdating} />
-                ) : (
-                    <Card className="h-full flex items-center justify-center min-h-[300px]">
-                        <Card.Content className="text-center text-slate-400">
-                           <p>Blueprint visualization is only available for LLM assets.</p>
-                        </Card.Content>
-                    </Card>
+                 return (
+                    <BlueprintPanel
+                        ref={blueprintRef}
+                        blueprintText={blueprintText}
+                        isLoading={isBlueprintLoading}
+                    />
                 );
             default:
                 return null;

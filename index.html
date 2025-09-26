@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arch1tech 2.0</title>
+    <title>Or4cl3 AI Solutions - The Forge</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,6 +32,43 @@
       .no-scrollbar {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+      /* NEW: Tooltip Styles */
+      .tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .tooltip-text {
+        visibility: hidden;
+        width: 200px;
+        background-color: rgb(var(--color-primary-val));
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 8px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -100px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+      }
+      .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: rgb(var(--color-primary-val)) transparent transparent transparent;
+      }
+      .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
       }
     </style>
     <style id="app-themes">
@@ -74,6 +111,20 @@
         --color-ethical-val: 236 72 153; /* pink-500 */
         --color-border-val: 6 182 212;
       }
+      /* NEW: Or4cl3 Theme based on brand guide */
+      .theme-oracl3 {
+        --color-bg-primary: #19012d; /* Deep Indigo base */
+        --color-bg-gradient-start: #19012d;
+        --color-bg-gradient-end: #000000;
+        --color-primary-val: 219 39 119; /* Radiant Pink/Magenta */
+        --color-primary-hover-val: 236 72 153; /* pink-500 */
+        --color-primary-light-val: 244 114 182; /* pink-400 */
+        --color-secondary-val: 76 29 149; /* Deep Indigo/Violet */
+        --color-secondary-hover-val: 91 33 182; /* purple-800 */
+        --color-accent-val: 6 182 212; /* Electric Blue/Cyan */
+        --color-ethical-val: 250 204 21; /* Subtle Gold/Orange */
+        --color-border-val: 6 182 212; /* Electric Blue/Cyan */
+      }
     </style>
   <script type="importmap">
 {
@@ -81,7 +132,8 @@
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1"
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "@floating-ui/core": "https://aistudiocdn.com/@floating-ui/core@^1.7.3"
   }
 }
 </script>

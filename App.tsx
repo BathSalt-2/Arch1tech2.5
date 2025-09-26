@@ -10,12 +10,12 @@ type View = 'landing' | 'loading' | 'dashboard';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('landing');
-  const [savedModels, setSavedModels] = useLocalStorage<SavedModel[]>('arch1tech-models', []);
-  const [theme, setTheme] = useLocalStorage<ThemeName>('arch1tech-theme', 'default');
+  const [savedModels, setSavedModels] = useLocalStorage<SavedModel[]>('or4cl3-models', []);
+  const [theme, setTheme] = useLocalStorage<ThemeName>('or4cl3-theme', 'oracl3');
 
   useEffect(() => {
     const body = document.body;
-    body.classList.remove('theme-default', 'theme-nebula', 'theme-cyberpunk');
+    body.classList.remove('theme-default', 'theme-nebula', 'theme-cyberpunk', 'theme-oracl3');
     body.classList.add(`theme-${theme}`);
   }, [theme]);
 

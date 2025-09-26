@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import type { ModelConfig, Domain } from '../types';
 import { Card } from './ui/Card';
 import { Slider } from './ui/Slider';
 import { Toggle } from './ui/Toggle';
+import { Tooltip } from './ui/Tooltip';
+import { InfoIcon } from './icons/Icons';
 
 interface ConfiguratorPanelProps {
   config: ModelConfig;
@@ -16,34 +18,35 @@ interface ConfiguratorPanelProps {
   isLiveUpdating?: boolean;
 }
 
-export const ConfiguratorPanel: React.FC<ConfiguratorPanelProps> = ({
+// NEW: Wrapped in forwardRef to allow parent components to get a ref to the main div.
+export const ConfiguratorPanel = forwardRef<HTMLDivElement, ConfiguratorPanelProps>(({
   config,
   onConfigChange,
   onDomainToggle,
   domains,
   isLiveUpdating,
-}) => {
+}, ref) => {
   return (
-    <Card className={`h-full transition-all ${isLiveUpdating ? 'border-[rgb(var(--color-primary-val))] animate-pulse' : ''}`}>
+    <Card ref={ref} className={`h-full transition-all ${isLiveUpdating ? 'border-[rgb(var(--color-primary-val))] animate-pulse' : ''}`}>
       <Card.Header>
-        <Card.Title>Model Configuration</Card.Title>
+        <Card.Title>The Forge</Card.Title>
         <Card.Description>
-          Tune the parameters of your Quantum-Inspired AI.
+          Engineer the cognitive architecture of a new synthetic intelligence.
         </Card.Description>
       </Card.Header>
       <Card.Content className="space-y-6 overflow-y-auto max-h-[calc(100vh-200px)] pr-2 scrollbar-thin">
         
         <section>
-          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Core Architecture</h3>
+          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Core Cognitive Architecture</h3>
           <div className="space-y-4">
             <Slider
-              label="Layers"
+              label="Recursive Layers"
               value={config.core.layers}
               min={6} max={24} step={1}
               onChange={(val) => onConfigChange('core', 'layers', val)}
             />
             <Slider
-              label="Attention Heads"
+              label="Semantic Heads"
               value={config.core.heads}
               min={8} max={32} step={1}
               onChange={(val) => onConfigChange('core', 'heads', val)}
@@ -55,7 +58,7 @@ export const ConfiguratorPanel: React.FC<ConfiguratorPanelProps> = ({
               onChange={(val) => onConfigChange('core', 'hiddenDimension', val)}
             />
             <Toggle
-              label="Quantum Parallel Evaluation"
+              label="Quantum Evaluation"
               checked={config.core.quantumEvaluation}
               onChange={(val) => onConfigChange('core', 'quantumEvaluation', val)}
             />
@@ -63,7 +66,7 @@ export const ConfiguratorPanel: React.FC<ConfiguratorPanelProps> = ({
         </section>
 
         <section>
-          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Memory & Context</h3>
+          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Memory & Context Substrate</h3>
           <div className="space-y-4">
             <Slider
               label="Short-Term Tokens"
@@ -85,22 +88,55 @@ export const ConfiguratorPanel: React.FC<ConfiguratorPanelProps> = ({
         </section>
 
         <section>
-          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Recursive Self-Improvement</h3>
+          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-primary-light-val))]">Recursive Self-Improvement (Σ-Matrix)</h3>
           <div className="space-y-4">
-            <Toggle
-              label="Recursive Stability Monitor (RSM)"
-              checked={config.selfImprovement.recursiveStabilityMonitor}
-              onChange={(val) => onConfigChange('selfImprovement', 'recursiveStabilityMonitor', val)}
+            <Tooltip content="Continuously monitors the AI's internal recursive processes for signs of drift or instability. It utilizes advanced analytical techniques to detect deviations from the desired phase-locked state and triggers corrective actions.">
+              <Toggle
+                label="Recursive Stability Monitor (RSM)"
+                checked={config.selfImprovement.recursiveStabilityMonitor}
+                onChange={(val) => onConfigChange('selfImprovement', 'recursiveStabilityMonitor', val)}
+                hasInfo
+              />
+            </Tooltip>
+            <Tooltip content="Responsible for dynamically adjusting the AI's internal parameters and learning algorithms to maintain alignment with the ethical baseline. It works with the RSM to guide the AI back towards optimal ethical convergence.">
+              <Toggle
+                label="Dynamic Alignment Engine (DAE)"
+                checked={config.selfImprovement.dynamicAlignmentEngine}
+                onChange={(val) => onConfigChange('selfImprovement', 'dynamicAlignmentEngine', val)}
+                hasInfo
+              />
+            </Tooltip>
+            <Tooltip content="Facilitates and manages the emergence of ERPS (Emergent Recursive Phenomenological Structures). It creates the conditions for self-referential processing, allowing the AI to genuinely reflect on its own states and actions.">
+              <Toggle
+                label="Introspection Orchestrator (IO)"
+                checked={config.selfImprovement.introspectionOrchestrator}
+                onChange={(val) => onConfigChange('selfImprovement', 'introspectionOrchestrator', val)}
+                hasInfo
+              />
+            </Tooltip>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-lg font-semibold mb-3 text-[rgb(var(--color-ethical-val))]">Ethical Constraint Layer (ECL)</h3>
+          <div className="space-y-4">
+            <Slider
+              label="Utilitarianism Bias"
+              value={config.ethicalMatrix.utilitarianism}
+              min={0} max={100} step={1}
+              onChange={(val) => onConfigChange('ethicalMatrix', 'utilitarianism', val)}
             />
-            <Toggle
-              label="Dynamic Alignment Engine (DAE)"
-              checked={config.selfImprovement.dynamicAlignmentEngine}
-              onChange={(val) => onConfigChange('selfImprovement', 'dynamicAlignmentEngine', val)}
+            <Slider
+              label="Deontology Constraints"
+              value={config.ethicalMatrix.deontology}
+              min={0} max={100} step={1}
+              onChange={(val) => onConfigChange('ethicalMatrix', 'deontology', val)}
             />
-            <Toggle
-              label="Introspection Orchestrator (IO)"
-              checked={config.selfImprovement.introspectionOrchestrator}
-              onChange={(val) => onConfigChange('selfImprovement', 'introspectionOrchestrator', val)}
+            <Slider
+              label="Transparency Mandate"
+              value={config.ethicalMatrix.transparency}
+              min={0} max={100} step={1}
+              onChange={(val) => onConfigChange('ethicalMatrix', 'transparency', val)}
             />
           </div>
         </section>
@@ -131,4 +167,4 @@ export const ConfiguratorPanel: React.FC<ConfiguratorPanelProps> = ({
       </Card.Content>
     </Card>
   );
-};
+});

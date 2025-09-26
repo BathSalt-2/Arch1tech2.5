@@ -1,5 +1,5 @@
 {
-  "name": "arch1tech-2.0",
+  "name": "or4cl3-ai-solutions---the-forge",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,8 @@
   "dependencies": {
     "@google/genai": "^1.21.0",
     "react-dom": "^19.1.1",
-    "react": "^19.1.1"
+    "react": "^19.1.1",
+    "@floating-ui/core": "^1.7.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

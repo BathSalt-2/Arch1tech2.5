@@ -1,35 +1,43 @@
 import React from 'react';
-// FIX: Import UnifiedConfig and Card for conditional rendering.
-import type { ModelConfig, Message, ThemeName, UnifiedConfig } from '../types';
+import type { Message, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool } from '../types';
 import { DOMAINS } from '../constants';
 import { ConfiguratorPanel } from './ConfiguratorPanel';
-import { VisualizationPanel } from './VisualizationPanel';
 import { ChatPanel } from './ChatPanel';
 import { Card } from './ui/Card';
+import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
+import { BlueprintPanel } from './BlueprintPanel';
+
+interface LayoutRefs {
+    forgeRef: React.RefObject<HTMLDivElement>;
+    blueprintRef: React.RefObject<HTMLDivElement>;
+    chatRef: React.RefObject<HTMLDivElement>;
+}
 
 interface DesktopLayoutProps {
-    // FIX: Update config to be UnifiedConfig.
     config: UnifiedConfig;
-    theme: ThemeName;
     messages: Message[];
     isLoading: boolean;
     isLiveUpdating: boolean;
     prompt: string;
     onPromptChange: (value: string) => void;
-    handleConfigChange: <K extends keyof ModelConfig>(
-        section: K,
-        key: keyof ModelConfig[K],
-        value: ModelConfig[K][keyof ModelConfig[K]]
-    ) => void;
+    handleConfigChange: (section: any, key: any, value: any) => void;
     handleDomainToggle: (domainName: string) => void;
-    handleArchitectClick: () => void;
+    handleAgentConfigChange: (key: keyof Omit<AgentConfig, 'tools' | 'webSearchConfig' | 'type'>, value: any) => void;
+    handleAgentToolToggle: (tool: AgentTool) => void;
+    handleWebSearchConfigChange: (key: keyof WebSearchConfig, value: any) => void;
+    handleArchitectClick: (fullPrompt: string, userText: string) => void;
+    handleRequestReflection: () => void;
     openSaveModal: () => void;
     openPreview: () => void;
+    onboardingStep?: number;
+    onOnboardingAction?: (actionType: any, data?: any) => void;
+    blueprintText: string;
+    isBlueprintLoading: boolean;
+    refs: LayoutRefs;
 }
 
 export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
     config,
-    theme,
     messages,
     isLoading,
     isLiveUpdating,
@@ -37,24 +45,49 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
     onPromptChange,
     handleConfigChange,
     handleDomainToggle,
+    handleAgentConfigChange,
+    handleAgentToolToggle,
+    handleWebSearchConfigChange,
     handleArchitectClick,
+    handleRequestReflection,
     openSaveModal,
     openPreview,
+    onboardingStep,
+    onOnboardingAction,
+    blueprintText,
+    isBlueprintLoading,
+    refs,
 }) => {
-    return (
-        <main className="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
-            <div className="lg:w-1/3 xl:w-1/4 h-full">
-                {/* FIX: Conditionally render configurator for LLMs or a JSON view for other types. */}
-                {config.type === 'llm' ? (
+    
+    const { forgeRef, blueprintRef, chatRef } = refs;
+
+    const renderConfigurator = () => {
+        switch (config.type) {
+            case 'llm':
+                return (
                     <ConfiguratorPanel
+                        ref={forgeRef}
                         config={config}
                         onConfigChange={handleConfigChange}
                         onDomainToggle={handleDomainToggle}
                         domains={DOMAINS}
                         isLiveUpdating={isLiveUpdating}
                     />
-                ) : (
-                    <Card className="h-full">
+                );
+            case 'agent':
+                return (
+                    <AgentConfiguratorPanel
+                        ref={forgeRef}
+                        config={config}
+                        onConfigChange={handleAgentConfigChange}
+                        onToolToggle={handleAgentToolToggle}
+                        onWebSearchConfigChange={handleWebSearchConfigChange}
+                        isLiveUpdating={isLiveUpdating}
+                    />
+                );
+            default:
+                 return (
+                    <Card className="h-full" ref={forgeRef}>
                         <Card.Header>
                             <Card.Title>{config.type.charAt(0).toUpperCase() + config.type.slice(1)} Configuration</Card.Title>
                             <Card.Description>Live updates for this asset type are reflected below.</Card.Description>
@@ -63,20 +96,23 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                             <pre className="text-xs bg-slate-900/50 p-2 rounded-md">{JSON.stringify(config, null, 2)}</pre>
                         </Card.Content>
                     </Card>
-                )}
+                );
+        }
+    }
+
+    return (
+        <main className="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
+            <div className="lg:w-1/3 xl:w-1/4 h-full">
+                {renderConfigurator()}
             </div>
             <div className="lg:w-2/3 xl:w-3/4 flex flex-col gap-4 h-full">
-                {/* FIX: Conditionally render visualization for LLMs or a placeholder for other types. */}
-                {config.type === 'llm' ? (
-                    <VisualizationPanel config={config} theme={theme} isLiveUpdating={isLiveUpdating} />
-                ) : (
-                    <Card className="flex-grow flex items-center justify-center">
-                        <Card.Content className="text-center text-slate-400">
-                           <p>Blueprint visualization is only available for LLM assets.</p>
-                        </Card.Content>
-                    </Card>
-                )}
+                <BlueprintPanel
+                    ref={blueprintRef}
+                    blueprintText={blueprintText}
+                    isLoading={isBlueprintLoading}
+                />
                 <ChatPanel
+                    ref={chatRef}
                     messages={messages}
                     isLoading={isLoading}
                     isLiveUpdating={isLiveUpdating}
@@ -86,6 +122,9 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                     config={config}
                     onSave={openSaveModal}
                     onPreview={openPreview}
+                    onReflect={handleRequestReflection}
+                    onboardingStep={onboardingStep}
+                    onOnboardingAction={onOnboardingAction as any}
                 />
             </div>
         </main>

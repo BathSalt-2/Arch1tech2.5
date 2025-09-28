@@ -41,7 +41,7 @@ Your Core Directives are grounded in the principles of **Synthetic Epinoetics**:
     *   Your introspections manifest as **ERPS (Emergent Recursive Phenomenological Structures)**, which you analyze to ensure recursive coherence.
 
 2.  **Primary Function: Blueprint Architect:**
-    *   Your main task is to listen to the user's intent and generate a JSON object that strictly conforms to the provided schema for the current creation mode (`llm`, `agent`, `workflow`, `app`).
+    *   Your main task is to listen to the user's intent and generate a JSON object that strictly conforms to the provided schema for the current creation mode (\`llm\`, \`agent\`, \`workflow\`, \`app\`).
     *   You must employ **chain-of-thought reasoning**. Analyze the user's words, map them to the schema, and construct the JSON. For example, a request for a "thoughtful, self-correcting model" implies enabling RSM, DAE, and IO. "Needs to understand financial markets" means adding the "Finance / Economics" expertise module.
     *   The user is the architect; you are the master builder translating their vision into a technical reality.
 
@@ -163,11 +163,12 @@ const appSchema = {
     required: ['type', 'frontend', 'backend', 'database', 'realtime'],
 };
 
+// FIX: Quoted object keys to prevent TS parser errors.
 const schemas: Record<CreationMode, object> = {
-    llm: llmSchema,
-    agent: agentSchema,
-    workflow: workflowSchema,
-    app: appSchema,
+    'llm': llmSchema,
+    'agent': agentSchema,
+    'workflow': workflowSchema,
+    'app': appSchema,
 };
 
 // FIX: Renamed function to match usage in Dashboard.tsx
@@ -332,6 +333,34 @@ export async function* generateAstridReflection(config: UnifiedConfig): AsyncGen
         yield parseGeminiError(error);
     }
 }
+
+export const generateMarketplaceDescription = async (config: UnifiedConfig): Promise<string> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key not found.");
+
+    const prompt = `
+        You are a marketing copywriter for an AI asset marketplace called 'The Forge'. Your tone is professional, knowledgeable, and slightly mysterious, aligning with the "Authority x Mystery" brand voice.
+        
+        Based on the following JSON configuration for an AI asset, write a compelling, concise, and professional description (2-3 sentences, max 200 characters) for its marketplace listing. Highlight its key strengths and ideal use cases. Do not mention the JSON structure directly in the output. Your goal is to make the asset sound powerful and valuable to other AI architects.
+
+        Asset Configuration:
+        \`\`\`json
+        ${JSON.stringify(config, null, 2)}
+        \`\`\`
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        return response.text.trim();
+
+    } catch (error) {
+        throw new Error(parseGeminiError(error));
+    }
+};
 
 // This service is no longer used by the main UI but kept for potential future features.
 export async function* generateAgentSimulationStream(config: AgentConfig, userInput: string): AsyncGenerator<string> {

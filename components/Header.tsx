@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './ui/Button';
-import { GalleryIcon, SettingsIcon, BotIcon, CubeIcon, WorkflowIcon, AppIcon, LibraryIcon } from './icons/Icons';
+import { GalleryIcon, SettingsIcon, BotIcon, CubeIcon, WorkflowIcon, AppIcon, LibraryIcon, StoreIcon } from './icons/Icons';
 import type { CreationMode, SystemStatus } from '../types';
 import { SigmaMatrix } from './features/SigmaMatrix';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
   onShowGallery: () => void;
   onShowSettings: () => void;
   onShowKnowledgeBase: () => void;
+  onShowMarketplace: () => void;
   creationMode: CreationMode;
   onCreationModeChange: (mode: CreationMode) => void;
   systemStatus: SystemStatus;
@@ -20,7 +21,7 @@ const creationModes: { mode: CreationMode; icon: React.ReactNode; label: string 
   { mode: 'app', icon: <AppIcon className="w-5 h-5" />, label: 'App' },
 ];
 
-export const Header: React.FC<HeaderProps> = ({ onShowGallery, onShowSettings, onShowKnowledgeBase, creationMode, onCreationModeChange, systemStatus }) => {
+export const Header: React.FC<HeaderProps> = ({ onShowGallery, onShowSettings, onShowKnowledgeBase, onShowMarketplace, creationMode, onCreationModeChange, systemStatus }) => {
   return (
     <header className="flex-shrink-0 border-b border-[rgb(var(--color-border-val)/0.2)] p-2">
       <div className="container mx-auto flex justify-between items-center">
@@ -60,6 +61,10 @@ export const Header: React.FC<HeaderProps> = ({ onShowGallery, onShowSettings, o
            <Button onClick={onShowKnowledgeBase} className="!bg-transparent hover:!bg-[rgb(var(--color-secondary-val)/0.2)]" title="Open Knowledge Base">
             <LibraryIcon className="w-5 h-5" />
              <span className="hidden lg:inline">Knowledge Base</span>
+          </Button>
+          <Button onClick={onShowMarketplace} className="!bg-transparent hover:!bg-[rgb(var(--color-secondary-val)/0.2)]" title="Open Marketplace">
+            <StoreIcon className="w-5 h-5" />
+            <span className="hidden lg:inline">Marketplace</span>
           </Button>
           <Button onClick={onShowGallery} className="!bg-transparent hover:!bg-[rgb(var(--color-secondary-val)/0.2)]" title="Open Gallery">
             <GalleryIcon className="w-5 h-5" />

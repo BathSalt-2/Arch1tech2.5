@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // FIX: Import UnifiedConfig to handle different asset types.
-import type { SavedModel, ModelConfig, UnifiedConfig } from '../types';
+import type { SavedModel, ModelConfig, UnifiedConfig, ModelVersion } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { TrashIcon, UploadCloudIcon, HistoryIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
@@ -13,6 +13,7 @@ interface GalleryModalProps {
   // FIX: Update onLoad to pass UnifiedConfig to support loading all asset types.
   onLoad: (config: UnifiedConfig, modelName: string) => void;
   onDelete: (modelId: number) => void;
+  onPublishRequest: (version: ModelVersion, modelName: string) => void;
 }
 
 const DetailItem: React.FC<{ label: string; value: string | number; }> = ({ label, value }) => (
@@ -33,7 +34,7 @@ const StatusItem: React.FC<{ label: string; active: boolean }> = ({ label, activ
 );
 
 
-export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, models, onLoad, onDelete }) => {
+export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, models, onLoad, onDelete, onPublishRequest }) => {
   const [expandedModelId, setExpandedModelId] = useState<number | null>(null);
   const [modelForDeletion, setModelForDeletion] = useState<SavedModel | null>(null);
 
@@ -110,9 +111,14 @@ export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, mod
                                           )}
                                       </div>
                                   </div>
-                                  <Button onClick={() => onLoad(version.config, model.name)} className="!bg-indigo-600 hover:!bg-indigo-500 focus:!ring-indigo-500 text-xs px-2 py-1 self-end md:self-center">
-                                      <UploadCloudIcon className="w-4 h-4" /> Load this version
-                                  </Button>
+                                  <div className="flex gap-2 self-end md:self-center">
+                                      <Button onClick={() => onLoad(version.config, model.name)} className="!bg-indigo-600 hover:!bg-indigo-500 focus:!ring-indigo-500 text-xs px-2 py-1">
+                                          <UploadCloudIcon className="w-4 h-4" /> Load
+                                      </Button>
+                                      <Button onClick={() => onPublishRequest(version, model.name)} className="!bg-green-600 hover:!bg-green-500 focus:!ring-green-500 text-xs px-2 py-1">
+                                          <UploadCloudIcon className="w-4 h-4" /> Publish
+                                      </Button>
+                                  </div>
                               </div>
                           ))}
                       </div>

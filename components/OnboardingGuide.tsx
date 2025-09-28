@@ -7,6 +7,7 @@ interface OnboardingGuideProps {
     highlightedElement: HighlightedElement | null;
     userName: string;
     onNext: () => void;
+    onSkip: () => void;
 }
 
 const getStepContent = (step: number, userName: string) => {
@@ -46,7 +47,7 @@ const getStepContent = (step: number, userName: string) => {
     }
 }
 
-export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ step, highlightedElement, userName, onNext }) => {
+export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ step, highlightedElement, userName, onNext, onSkip }) => {
     const content = getStepContent(step, userName);
     const { rect, padding = 10, radius = 12 } = highlightedElement || {};
 
@@ -87,11 +88,19 @@ export const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ step, highligh
             >
                 <h3 className="text-lg font-bold text-[rgb(var(--color-primary-light-val))]">{content.title}</h3>
                 <p className="text-slate-300 mt-2 text-sm">{content.text}</p>
-                {content.showNext && (
-                    <div className="flex justify-end mt-4">
-                        <Button onClick={onNext}>Continue</Button>
-                    </div>
-                )}
+                <div className="flex justify-between items-center mt-4">
+                    <button 
+                        onClick={onSkip} 
+                        className="text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                        Skip Tutorial
+                    </button>
+                    {content.showNext && (
+                        <div className="flex justify-end">
+                            <Button onClick={onNext}>Continue</Button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

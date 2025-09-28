@@ -129,6 +129,7 @@ export interface Theme {
         secondary: string;
         accent: string;
     };
+    description: string;
 }
 
 export type MobileView = 'chat' | 'visualize' | 'configure' | 'gallery';
@@ -138,4 +139,19 @@ export interface HighlightedElement {
     rect: DOMRect | null;
     padding?: number;
     radius?: number;
+}
+
+// NEW: Types for Marketplace
+export type LicenseType = 'OOML' | 'Commercial' | 'Subscription';
+
+export interface MarketplaceAsset {
+  id: string;
+  creator: string;
+  assetName: string;
+  description: string;
+  config: UnifiedConfig;
+  license: LicenseType;
+  cost: number; // Fictional "Sigma Credits"
+  downloads: number;
+  publishedAt: string; // ISO 8601
 }

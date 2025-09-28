@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Message, SavedModel, ThemeName, MobileView, UnifiedConfig, CreationMode, SystemStatus, AgentConfig, AgentTool, WebSearchConfig, HighlightedElement } from '../types';
-import { DEFAULT_LLM_CONFIG, DEFAULT_AGENT_CONFIG, DEFAULT_WORKFLOW_CONFIG, DEFAULT_APP_CONFIG, DOMAINS } from '../constants';
+import type { Message, SavedModel, ThemeName, MobileView, UnifiedConfig, CreationMode, SystemStatus, AgentConfig, AgentTool, WebSearchConfig, HighlightedElement, ModelVersion, LicenseType, MarketplaceAsset } from '../types';
+import { DEFAULT_LLM_CONFIG, DEFAULT_AGENT_CONFIG, DEFAULT_WORKFLOW_CONFIG, DEFAULT_APP_CONFIG, DOMAINS, INITIAL_MARKETPLACE_ASSETS } from '../constants';
 import { Header } from './Header';
-import { generateAstridResponseStream, generateConfigFromDescription, generateAstridReflection, generateBlueprintStream } from '../services/geminiService';
+import { generateAstridResponseStream, generateConfigFromDescription, generateAstridReflection, generateBlueprintStream, generateMarketplaceDescription } from '../services/geminiService';
 import { GalleryModal } from './GalleryModal';
 import { SaveModelModal } from './SaveModelModal';
 import { ArchitecturePreviewModal } from './ArchitecturePreviewModal';
@@ -16,6 +16,8 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { OnboardingGuide } from './OnboardingGuide';
 import { KnowledgeBaseModal } from './KnowledgeBaseModal';
+import { MarketplaceModal } from './MarketplaceModal';
+import { PublishModal } from './PublishModal';
 
 interface DashboardProps {
     savedModels: SavedModel[];
@@ -93,6 +95,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   const [onboardingStep, setOnboardingStep] = useState(onboardingComplete ? -1 : 0); // -1 means inactive
   const [userName, setUserName] = useState('');
   const [highlightedElement, setHighlightedElement] = useState<HighlightedElement | null>(null);
+
+  // NEW: State for Marketplace
+  const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [assetToPublish, setAssetToPublish] = useState<{ version: ModelVersion; name: string } | null>(null);
+  const [marketplaceAssets, setMarketplaceAssets] = useLocalStorage<MarketplaceAsset[]>('or4cl3-marketplace', INITIAL_MARKETPLACE_ASSETS);
 
   // Refs for highlighting UI elements during onboarding
   const forgeRef = useRef<HTMLDivElement>(null);
@@ -375,7 +383,67 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
         text: `The blueprint for "${modelName}" (${modelConfig.type.toUpperCase()}) is now loaded.`
     }]);
   };
+
+  const handlePublishRequest = (version: ModelVersion, name: string) => {
+    if (onboardingStep > -1) return;
+    setAssetToPublish({ version, name });
+    setIsPublishModalOpen(true);
+  };
+
+  const handlePublish = ({ description, license, cost }: { description: string; license: LicenseType; cost: number }) => {
+    if (!assetToPublish) return;
+    const newAsset: MarketplaceAsset = {
+        id: `${assetToPublish.name.replace(/\s+/g, '-')}-${Date.now()}`,
+        creator: userName || 'Anonymous Architect',
+        assetName: assetToPublish.name,
+        description,
+        config: assetToPublish.version.config,
+        license,
+        cost,
+        downloads: 0,
+        publishedAt: new Date().toISOString(),
+    };
+    setMarketplaceAssets(prev => [newAsset, ...prev]);
+    setIsPublishModalOpen(false);
+    setAssetToPublish(null);
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: `Blueprint "${newAsset.assetName}" has been successfully published to the Marketplace.` }]);
+  };
+
+  const handleAcquireAsset = (asset: MarketplaceAsset) => {
+    onSaveModel(asset.assetName, asset.config);
+    setIsMarketplaceOpen(false);
+    setMarketplaceAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloads: (a.downloads || 0) + 1 } : a));
+    setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: `Blueprint for "${asset.assetName}" has been acquired and added to your personal Gallery.` }]);
+  };
+
+  const handleGenerateDescription = async (config: UnifiedConfig): Promise<string> => {
+    try {
+        const description = await generateMarketplaceDescription(config);
+        return description;
+    } catch (error: any) {
+        console.error("Description generation failed:", error);
+        setMessages(prev => [...prev, {
+            id: Date.now(),
+            sender: 'ai',
+            text: `Marketplace description generation failed: ${error.message}`,
+            isError: true,
+        }]);
+        return "Error generating description. Please try again.";
+    }
+  };
   
+  // NEW: Function to skip the onboarding flow.
+  const handleSkipOnboarding = () => {
+    setOnboardingComplete(true);
+    setHighlightedElement(null);
+    setMessages([{ 
+        id: Date.now(), 
+        sender: 'ai', 
+        text: 'Onboarding sequence bypassed. The Forge is now fully operational. My Σ-Matrix is stable and I am ready for your next directive.' 
+    }]);
+    setOnboardingStep(-1); // End onboarding
+  };
+
   const commonProps = {
       config,
       messages,
@@ -406,12 +474,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
 
   const layoutRefs = { forgeRef, blueprintRef, chatRef };
 
+  const existingNames = savedModels.map(m => m.name);
+
   return (
     <div className={`bg-[var(--color-bg-primary)] bg-gradient-to-br from-[var(--color-bg-gradient-start)] to-[var(--color-bg-gradient-end)] min-h-screen flex flex-col h-screen transition-filter duration-500 ${onboardingStep > -1 ? 'pointer-events-none' : ''}`}>
       <Header
         onShowGallery={() => setIsGalleryOpen(true)}
         onShowSettings={() => setIsSettingsOpen(true)}
         onShowKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+        onShowMarketplace={() => setIsMarketplaceOpen(true)}
         creationMode={creationMode}
         onCreationModeChange={handleCreationModeChange}
         systemStatus={systemStatus}
@@ -431,8 +502,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
         <DesktopLayout {...commonProps} refs={layoutRefs} />
       )}
       
-      <GalleryModal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} models={savedModels} onLoad={handleLoadModel} onDelete={onDeleteModel} />
-      <SaveModelModal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} onSave={handleSaveWithName} />
+      <GalleryModal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} models={savedModels} onLoad={handleLoadModel} onDelete={onDeleteModel} onPublishRequest={handlePublishRequest} />
+      <SaveModelModal 
+        isOpen={isSaveModalOpen} 
+        onClose={() => setIsSaveModalOpen(false)} 
+        onSave={handleSaveWithName} 
+        existingNames={existingNames}
+      />
       <ArchitecturePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} config={config} />
       <SettingsModal 
         isOpen={isSettingsOpen} 
@@ -443,12 +519,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       />
       <LicenseModal isOpen={isLicenseOpen} onClose={() => setIsLicenseOpen(false)} />
       <KnowledgeBaseModal isOpen={isKnowledgeBaseOpen} onClose={() => setIsKnowledgeBaseOpen(false)} />
+      <MarketplaceModal isOpen={isMarketplaceOpen} onClose={() => setIsMarketplaceOpen(false)} assets={marketplaceAssets} onAcquire={handleAcquireAsset} />
+      <PublishModal 
+        isOpen={isPublishModalOpen} 
+        onClose={() => setIsPublishModalOpen(false)} 
+        onPublish={handlePublish} 
+        assetName={assetToPublish?.name || ''}
+        assetConfig={assetToPublish?.version.config}
+        onGenerateDescription={handleGenerateDescription}
+      />
        {onboardingStep > -1 && (
         <OnboardingGuide 
           step={onboardingStep}
           highlightedElement={highlightedElement}
           userName={userName}
           onNext={() => setOnboardingStep(prev => prev + 1)}
+          onSkip={handleSkipOnboarding}
         />
        )}
     </div>

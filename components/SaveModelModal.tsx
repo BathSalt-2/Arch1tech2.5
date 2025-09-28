@@ -7,9 +7,10 @@ interface SaveModelModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string) => void;
+  existingNames: string[];
 }
 
-export const SaveModelModal: React.FC<SaveModelModalProps> = ({ isOpen, onClose, onSave }) => {
+export const SaveModelModal: React.FC<SaveModelModalProps> = ({ isOpen, onClose, onSave, existingNames }) => {
   const [name, setName] = useState('');
 
   if (!isOpen) return null;
@@ -20,6 +21,8 @@ export const SaveModelModal: React.FC<SaveModelModalProps> = ({ isOpen, onClose,
       setName('');
     }
   };
+
+  const nameExists = name.trim() && existingNames.includes(name.trim());
 
   return (
     <div 
@@ -49,6 +52,14 @@ export const SaveModelModal: React.FC<SaveModelModalProps> = ({ isOpen, onClose,
                 }
             }}
           />
+          <p className="text-xs text-slate-500 mt-2 h-4 transition-opacity duration-300"
+             style={{ opacity: name.trim() ? 1 : 0 }}
+          >
+            {nameExists 
+                ? "This will add a new version to the existing blueprint." 
+                : "This will create a new blueprint in your gallery."
+            }
+          </p>
         </Card.Content>
         <Card.Footer className="flex justify-end gap-2">
             <Button onClick={onClose} className="!bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500">
@@ -56,7 +67,7 @@ export const SaveModelModal: React.FC<SaveModelModalProps> = ({ isOpen, onClose,
             </Button>
             <Button onClick={handleSaveClick} disabled={!name.trim()}>
                 <SaveIcon className="w-5 h-5" />
-                Save Blueprint
+                {nameExists ? 'Archive New Version' : 'Archive New Blueprint'}
             </Button>
         </Card.Footer>
       </Card>

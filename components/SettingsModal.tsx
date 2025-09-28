@@ -4,6 +4,7 @@ import { THEMES } from '../constants';
 import type { ThemeName } from '../types';
 import { Button } from './ui/Button';
 import { ShieldCheckIcon } from './icons/Icons';
+import { Tooltip } from './ui/Tooltip';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -37,22 +38,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </Card.Header>
         <Card.Content className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {THEMES.map(theme => (
-            <button
-              key={theme.name}
-              onClick={() => onThemeChange(theme.name)}
-              className={`p-4 border rounded-lg text-center transition-all ${
-                currentTheme === theme.name
-                  ? 'border-[rgb(var(--color-accent-val))] ring-2 ring-[rgb(var(--color-accent-val))]'
-                  : 'border-[rgb(var(--color-border-val)/0.3)] hover:border-[rgb(var(--color-accent-val))]'
-              }`}
-            >
-              <div className="flex justify-center gap-2 mb-2">
-                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.primary }}></span>
-                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.secondary }}></span>
-                <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.accent }}></span>
-              </div>
-              <p className="text-sm font-semibold text-slate-200">{theme.displayName}</p>
-            </button>
+            <Tooltip key={theme.name} content={theme.description}>
+              <button
+                onClick={() => onThemeChange(theme.name)}
+                className={`p-4 border rounded-lg text-center transition-all w-full h-full ${
+                  currentTheme === theme.name
+                    ? 'border-[rgb(var(--color-accent-val))] ring-2 ring-[rgb(var(--color-accent-val))]'
+                    : 'border-[rgb(var(--color-border-val)/0.3)] hover:border-[rgb(var(--color-accent-val))]'
+                }`}
+              >
+                <div className="flex justify-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.primary }}></span>
+                  <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.secondary }}></span>
+                  <span className="w-5 h-5 rounded-full" style={{ backgroundColor: theme.colors.accent }}></span>
+                </div>
+                <p className="text-sm font-semibold text-slate-200">{theme.displayName}</p>
+              </button>
+            </Tooltip>
           ))}
         </Card.Content>
         <Card.Footer className="flex justify-between items-center">

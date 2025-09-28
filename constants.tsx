@@ -1,4 +1,4 @@
-import type { ModelConfig, Domain, Theme, AgentConfig, WorkflowConfig, AppConfig, AgentTool } from './types';
+import type { ModelConfig, Domain, Theme, AgentConfig, WorkflowConfig, AppConfig, AgentTool, MarketplaceAsset } from './types';
 import React from 'react';
 import { BrainCircuitIcon, CodeIcon, DnaIcon, InfinityIcon, MusicIcon, ScaleIcon, BriefcaseIcon, GamepadIcon, FeatherIcon, FileTerminalIcon, CodeSquareIcon, DatabaseIcon, BotIcon } from './components/icons/Icons';
 
@@ -150,7 +150,8 @@ export const THEMES: Theme[] = [
             primary: '#db2777', // pink-600
             secondary: '#4c1d95', // violet-800
             accent: '#06b6d4', // cyan-500
-        }
+        },
+        description: "The signature Or4cl3 theme. A fusion of deep indigo, radiant magenta, and electric cyan, embodying our 'Authority x Mystery' brand voice."
     },
     {
         name: 'nebula',
@@ -159,7 +160,8 @@ export const THEMES: Theme[] = [
             primary: '#06b6d4', // cyan-500
             secondary: '#22c55e', // green-500
             accent: '#22c55e', // green-500
-        }
+        },
+        description: "A cool, serene theme inspired by deep space. Dominated by cyans and greens, it evokes a sense of calm, focus, and cosmic exploration."
     },
     {
         name: 'cyberpunk',
@@ -168,7 +170,8 @@ export const THEMES: Theme[] = [
             primary: '#fde047', // yellow-300
             secondary: '#ec4899', // pink-500
             accent: '#06b6d4', // cyan-500
-        }
+        },
+        description: "A high-energy, futuristic theme. Blends vibrant yellows and pinks against a dark backdrop for a retro-futuristic, neon-drenched aesthetic."
     }
 ];
 
@@ -319,3 +322,67 @@ Key idea:
 
 > Open like MIT, protective like GPL — free to innovate, but improvements and attribution stay in the community.
 `;
+
+// NEW: Mock data for the marketplace to feel populated on first load.
+export const INITIAL_MARKETPLACE_ASSETS: MarketplaceAsset[] = [
+    {
+        id: 'agent-deep-researcher-1',
+        creator: 'Architect Zero',
+        assetName: 'Deep Web Researcher',
+        description: 'An autonomous agent optimized for deep, recursive web searches. Excellent for academic research and market analysis. Comes with pre-configured filters to reduce noise.',
+        config: {
+            type: 'agent',
+            goal: 'Data Analysis',
+            autonomous: true,
+            tools: ['Web Search', 'File System Access'],
+            webSearchConfig: {
+                searchDepth: 'Deep',
+                filterResults: true,
+                resultCount: 20,
+                keywords: 'academic, research, data, analysis',
+            },
+        },
+        license: 'Commercial',
+        cost: 250,
+        downloads: 112,
+        publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    },
+    {
+        id: 'llm-poet-1',
+        creator: 'E. A. Poe',
+        assetName: 'The Raven Poetic Engine',
+        description: 'A highly specialized LLM fine-tuned for creative writing and poetry generation. Features a unique cognitive architecture that prioritizes metaphorical reasoning and emotional resonance.',
+        config: {
+            type: 'llm',
+            core: { layers: 18, heads: 24, hiddenDimension: 768, quantumEvaluation: true },
+            memory: { shortTermTokens: 8192, episodicMemory: true, knowledgeGraph: false },
+            selfImprovement: { recursiveStabilityMonitor: true, dynamicAlignmentEngine: false, introspectionOrchestrator: true },
+            expertise: { domains: ['Creative Writing / Storytelling', 'Philosophy / Ethics', 'Music Theory / Composition'] },
+            ethicalMatrix: { utilitarianism: 20, deontology: 80, transparency: 60 },
+        },
+        license: 'OOML',
+        cost: 0,
+        downloads: 589,
+        publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    },
+    {
+        id: 'workflow-social-media-1',
+        creator: 'SocialStream Inc.',
+        assetName: 'Auto Social Poster',
+        description: 'A simple but powerful workflow that takes a text input, generates a relevant image using an external API (placeholder), and posts to multiple social media platforms.',
+        config: {
+            type: 'workflow',
+            name: 'Auto Social Poster',
+            steps: [
+                { id: 1, type: 'Trigger', description: 'Receives text content.' },
+                { id: 2, type: 'Action', description: 'Connects to ImageGen API to create an image.' },
+                { id: 3, type: 'Logic', description: 'Formats posts for Twitter, LinkedIn.' },
+                { id: 4, type: 'Output', description: 'Publishes formatted posts.' },
+            ],
+        },
+        license: 'Subscription',
+        cost: 50,
+        downloads: 34,
+        publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+    },
+];

@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback, forwardRef } from 'react';
-import type { Message, UnifiedConfig } from '../types';
+import type { Message, UnifiedConfig, KnowledgeBaseTopic } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { BotIcon, UserIcon, DownloadIcon, SaveIcon, SparklesIcon, EyeIcon, UploadCloudIcon, FileTextIcon, AlertTriangleIcon, XCircleIcon, DnaIcon } from './icons/Icons';
+import { BotIcon, UserIcon, DownloadIcon, SaveIcon, SparklesIcon, EyeIcon, UploadCloudIcon, FileTextIcon, AlertTriangleIcon, XCircleIcon, DnaIcon, DicesIcon } from './icons/Icons';
+import { InteractiveAIMessage } from './InteractiveAIMessage';
 
 interface ChatPanelProps {
   messages: Message[];
@@ -18,53 +19,9 @@ interface ChatPanelProps {
   // NEW: Props for onboarding flow
   onboardingStep?: number;
   onOnboardingAction?: (actionType: 'save_onboarding_agent') => void;
+  onOpenKnowledgeBase: (topic: KnowledgeBaseTopic) => void;
+  onOpenEthicalSim: () => void;
 }
-
-const AIMessage: React.FC<{ message: Message, onOnboardingAction?: (actionType: 'save_onboarding_agent') => void; }> = ({ message, onOnboardingAction }) => {
-  const { text, isReflection, isError, action } = message;
-  
-  return (
-    <div className="flex items-start gap-3">
-      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ring-1 ${
-          isError ? 'bg-red-900/50 ring-red-400' :
-          isReflection ? 'bg-indigo-900/50 ring-indigo-400' : 
-          'bg-[rgb(var(--color-primary-val)/0.2)] ring-[rgb(var(--color-primary-val))]'
-      }`}>
-        {isError ? (
-          <AlertTriangleIcon className="w-5 h-5 text-red-300" />
-        ) : isReflection ? (
-          <DnaIcon className="w-5 h-5 text-indigo-300" />
-        ) : (
-          <BotIcon className="w-5 h-5 text-[rgb(var(--color-primary-light-val))]" />
-        )}
-      </div>
-      <div className={`rounded-lg p-3 max-w-2xl min-w-[60px] ${
-          isError ? 'bg-red-800/40 border border-red-600/50' :
-          isReflection ? 'bg-slate-800/60 border border-indigo-600/50 italic' : 
-          'bg-slate-700/50'
-      }`}>
-          {text.length === 0 ? (
-              <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-[rgb(var(--color-primary-light-val))] rounded-full animate-pulse delay-0"></span>
-                  <span className="w-2 h-2 bg-[rgb(var(--color-primary-light-val))] rounded-full animate-pulse delay-150"></span>
-                  <span className="w-2 h-2 bg-[rgb(var(--color-primary-light-val))] rounded-full animate-pulse delay-300"></span>
-              </div>
-          ) : (
-              <p className={`whitespace-pre-wrap ${
-                  isError ? 'text-red-200' :
-                  isReflection ? 'text-indigo-200' : 'text-slate-200'
-              }`}>{text}</p>
-          )}
-          {action && onOnboardingAction && (
-            <Button onClick={() => onOnboardingAction(action.type)} className="mt-3 w-full">
-              <SaveIcon className="w-5 h-5" />
-              {action.label}
-            </Button>
-          )}
-      </div>
-    </div>
-  );
-};
 
 const UserMessage: React.FC<{ text: string }> = ({ text }) => (
   <div className="flex items-start gap-3 justify-end">
@@ -80,6 +37,7 @@ const UserMessage: React.FC<{ text: string }> = ({ text }) => (
 const MIN_PROMPT_LENGTH = 10;
 const SUPPORTED_FILE_TYPES = {
     'text/plain': { icon: <FileTextIcon className="w-5 h-5 text-green-400" />, supported: true, note: 'Content will be processed.' },
+    'application/json': { icon: <FileTextIcon className="w-5 h-5 text-purple-400" />, supported: true, note: 'Blueprint will be analyzed.' },
     'application/pdf': { icon: <AlertTriangleIcon className="w-5 h-5 text-yellow-400" />, supported: false, note: 'PDF parsing coming soon.' },
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { icon: <AlertTriangleIcon className="w-5 h-5 text-yellow-400" />, supported: false, note: 'DOCX parsing coming soon.' },
 };
@@ -94,7 +52,7 @@ const readFileAsText = (file: File): Promise<string> => {
 };
 
 // NEW: Wrapped in forwardRef to allow parent components to get a ref to the main div.
-export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages, isLoading, isLiveUpdating, prompt, onPromptChange, onArchitectClick, config, onSave, onPreview, onReflect, onboardingStep, onOnboardingAction }, ref) => {
+export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages, isLoading, isLiveUpdating, prompt, onPromptChange, onArchitectClick, config, onSave, onPreview, onReflect, onboardingStep, onOnboardingAction, onOpenKnowledgeBase, onOpenEthicalSim }, ref) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -207,7 +165,7 @@ export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages,
       <Card.Content ref={scrollRef} className="flex-grow overflow-y-auto space-y-4 p-4 scrollbar-thin">
         {messages.map((msg) =>
           msg.sender === 'ai' ? (
-            <AIMessage key={msg.id} message={msg} onOnboardingAction={onOnboardingAction} />
+            <InteractiveAIMessage key={msg.id} message={msg} onOnboardingAction={onOnboardingAction} onOpenKnowledgeBase={onOpenKnowledgeBase} />
           ) : (
             <UserMessage key={msg.id} text={msg.text} />
           )
@@ -245,12 +203,12 @@ export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages,
                 multiple 
                 className="hidden"
                 onChange={(e) => handleFileChange(e.target.files)}
-                accept=".txt"
+                accept=".txt,.json"
             />
             <div className="text-center text-sm p-2 text-slate-400">
                 <UploadCloudIcon className="w-6 h-6 mx-auto mb-1" />
                 <p>Drag & drop context files, or <button onClick={() => fileInputRef.current?.click()} className="text-[rgb(var(--color-primary-light-val))] hover:underline font-semibold">browse</button></p>
-                <p className="text-xs text-slate-500 mt-1">.txt supported | .pdf & .docx coming soon</p>
+                <p className="text-xs text-slate-500 mt-1">.txt & .json supported</p>
             </div>
             </div>
         )}
@@ -262,7 +220,7 @@ export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages,
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleArchitect();
+                if (!isArchitectDisabled) handleArchitect();
               }
             }}
             placeholder={
@@ -299,10 +257,16 @@ export const ChatPanel = forwardRef<HTMLDivElement, ChatPanelProps>(({ messages,
                 Export
             </Button>
         </div>
-        <Button onClick={onPreview} disabled={isLoading || isDuringOnboarding} title="Preview Blueprint" className="w-full !bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500">
-            <EyeIcon className="w-5 h-5" />
-            Preview Full Blueprint
-        </Button>
+        <div className="grid grid-cols-2 gap-2 w-full">
+             <Button onClick={onOpenEthicalSim} disabled={isLoading || isDuringOnboarding} title="AEGIS-Ω Ethical Simulation" className="w-full !bg-cyan-700 hover:!bg-cyan-600 focus:!ring-cyan-600">
+                <DicesIcon className="w-5 h-5" />
+                Ethical Simulation
+            </Button>
+            <Button onClick={onPreview} disabled={isLoading || isDuringOnboarding} title="Preview Blueprint" className="w-full !bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500">
+                <EyeIcon className="w-5 h-5" />
+                Full Blueprint
+            </Button>
+        </div>
       </Card.Footer>
     </Card>
   );

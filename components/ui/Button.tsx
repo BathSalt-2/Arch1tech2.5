@@ -13,6 +13,7 @@ export const Button: React.FC<ButtonProps> = ({ children, className, ...props })
         disabled:bg-slate-600 disabled:cursor-not-allowed disabled:text-slate-400
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[rgb(var(--color-primary-val))]
         flex items-center justify-center gap-2
+        button-glow-effect
         ${className}
       `}
       {...props}

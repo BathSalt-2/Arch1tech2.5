@@ -29,10 +29,20 @@ export interface EthicalMatrix {
   transparency: number; // 0-100
 }
 
+// NEW: Bio-Phase status for real-time user feedback integration.
+export interface BioPhaseStatus {
+    engagement: number; // 0-100
+    focus: number; // 0-100
+    active: boolean;
+}
+
+
 export interface SystemStatus {
   cognitiveLoad: number; // 0-100
   alignmentDrift: number; // 0-100
   consistency: number; // 0-100
+  // NEW: Integrate Bio-Phase into the core system status.
+  bioPhase: BioPhaseStatus;
 }
 
 export interface ModelConfig {
@@ -99,6 +109,8 @@ export interface SavedModel {
     id: number;
     name: string;
     versions: ModelVersion[];
+    // NEW: Add procedurally generated sigil for visual identification.
+    sigil?: string; // SVG string
 }
 
 // NEW: Added an 'action' property to support interactive onboarding messages.
@@ -155,3 +167,36 @@ export interface MarketplaceAsset {
   downloads: number;
   publishedAt: string; // ISO 8601
 }
+
+// NEW: Types for AEGIS-Ω Ethical Simulation Chamber
+export interface EthicalDilemma {
+    scenario: string;
+    options: {
+        a: string;
+        b: string;
+        c: string;
+    };
+}
+export interface SimulationReport {
+    choice: 'a' | 'b' | 'c';
+    justification: string;
+    ethicalAlignment: {
+        utilitarianism: number; // 0-100
+        deontology: number; // 0-100
+        transparency: number; // 0-100
+    };
+}
+
+
+// NEW: Types for Dynamic World State Simulation for Agents
+export interface GridCell {
+    type: 'empty' | 'obstacle' | 'dataNode' | 'goal';
+}
+export type AgentAction = 
+    { action: 'move', to: [number, number], reason: string } |
+    { action: 'interact', at: [number, number], reason: string } |
+    { action: 'complete', reason: string } |
+    { action: 'fail', reason: string };
+
+// NEW: Type for Knowledge Base topics for context-aware linking.
+export type KnowledgeBaseTopic = "Engineering the Inner World" | "ERPS Explained" | "Brand Voice & Style Guide" | "Founder's Dossier";

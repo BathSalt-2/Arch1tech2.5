@@ -1,11 +1,13 @@
 import React from 'react';
-import type { Message, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool } from '../types';
+import type { Message, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool, KnowledgeBaseTopic } from '../types';
 import { DOMAINS } from '../constants';
 import { ConfiguratorPanel } from './ConfiguratorPanel';
 import { ChatPanel } from './ChatPanel';
-import { Card } from './ui/Card';
 import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
 import { BlueprintPanel } from './BlueprintPanel';
+import { GenerativeUIPanel } from './GenerativeUIPanel';
+// FIX: Import the Card component.
+import { Card } from './ui/Card';
 
 interface LayoutRefs {
     forgeRef: React.RefObject<HTMLDivElement>;
@@ -34,6 +36,9 @@ interface DesktopLayoutProps {
     blueprintText: string;
     isBlueprintLoading: boolean;
     refs: LayoutRefs;
+    onOpenKnowledgeBase: (topic: KnowledgeBaseTopic) => void;
+    onOpenEthicalSim: () => void;
+    onLaunchAgentSim: () => void;
 }
 
 export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
@@ -57,6 +62,9 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
     blueprintText,
     isBlueprintLoading,
     refs,
+    onOpenKnowledgeBase,
+    onOpenEthicalSim,
+    onLaunchAgentSim,
 }) => {
     
     const { forgeRef, blueprintRef, chatRef } = refs;
@@ -83,14 +91,19 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                         onToolToggle={handleAgentToolToggle}
                         onWebSearchConfigChange={handleWebSearchConfigChange}
                         isLiveUpdating={isLiveUpdating}
+                        onLaunchSimulation={onLaunchAgentSim}
                     />
+                );
+            case 'app':
+                return (
+                    <GenerativeUIPanel ref={forgeRef} config={config} />
                 );
             default:
                  return (
                     <Card className="h-full" ref={forgeRef}>
                         <Card.Header>
                             <Card.Title>{config.type.charAt(0).toUpperCase() + config.type.slice(1)} Configuration</Card.Title>
-                            <Card.Description>Live updates for this asset type are reflected below.</Card.Description>
+                            <Card.Description>This asset type is configured via the command console.</Card.Description>
                         </Card.Header>
                         <Card.Content className="overflow-auto scrollbar-thin">
                             <pre className="text-xs bg-slate-900/50 p-2 rounded-md">{JSON.stringify(config, null, 2)}</pre>
@@ -110,6 +123,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                     ref={blueprintRef}
                     blueprintText={blueprintText}
                     isLoading={isBlueprintLoading}
+                    config={config}
                 />
                 <ChatPanel
                     ref={chatRef}
@@ -125,6 +139,8 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                     onReflect={handleRequestReflection}
                     onboardingStep={onboardingStep}
                     onOnboardingAction={onOnboardingAction as any}
+                    onOpenKnowledgeBase={onOpenKnowledgeBase}
+                    onOpenEthicalSim={onOpenEthicalSim}
                 />
             </div>
         </main>

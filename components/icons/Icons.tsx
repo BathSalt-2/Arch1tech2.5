@@ -322,3 +322,38 @@ export const StoreIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path d="M2 7v3a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V7"/>
     </svg>
 );
+
+// NEW: Icon for Bio-Phase Monitor
+export const BioPhaseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 12c-2.67 0-5-2.24-5-5s2.33-5 5-5 5 2.24 5 5-2.33 5-5 5z"></path>
+        <path d="M20.29 17.29a2.33 2.33 0 0 0-3.3-3.3 5 5 0 0 0-7.07 0 2.33 2.33 0 0 0-3.3 3.3c.59.59 1.22 1.12 1.88 1.62"></path>
+    </svg>
+);
+
+// NEW: Icon for Ethical Simulation
+export const DicesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect>
+        <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3.18l-3.5-3.5a2.24 2.24 0 0 0-3.18 0L12 6"></path>
+    </svg>
+);
+
+// NEW: Icon for 3D View
+export const ViewIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12s2.545-5 7-5c4.454 0 7 5 7 5s-2.546 5-7 5c-4.455 0-7-5-7-5z"></path>
+        <path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+        <path d="M21 8.25V2.94a.94.94 0 0 0-.94-.94H15.75"></path>
+        <path d="M3 15.75V21.06a.94.94 0 0 0 .94.94h5.31"></path>
+    </svg>
+);
+
+// NEW: Icon for generated Sigils
+export const SigmaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 7V4H6v3"></path>
+        <path d="M12 4v16"></path>
+        <path d="M6 20v-3h12v3"></path>
+    </svg>
+);

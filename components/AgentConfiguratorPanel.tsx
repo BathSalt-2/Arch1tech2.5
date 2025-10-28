@@ -4,6 +4,8 @@ import { Card } from './ui/Card';
 import { Toggle } from './ui/Toggle';
 import { Slider } from './ui/Slider';
 import { AGENT_TOOLS } from '../constants';
+import { Button } from './ui/Button';
+import { DicesIcon } from './icons/Icons';
 
 interface AgentConfiguratorPanelProps {
   config: AgentConfig;
@@ -11,6 +13,7 @@ interface AgentConfiguratorPanelProps {
   onToolToggle: (tool: AgentTool) => void;
   onWebSearchConfigChange: (key: keyof WebSearchConfig, value: any) => void;
   isLiveUpdating?: boolean;
+  onLaunchSimulation: () => void;
 }
 
 const goals: AgentGoal[] = ['Data Analysis', 'Code Generation', 'Task Automation', 'Creative Writing'];
@@ -46,6 +49,7 @@ export const AgentConfiguratorPanel = forwardRef<HTMLDivElement, AgentConfigurat
   onToolToggle,
   onWebSearchConfigChange,
   isLiveUpdating,
+  onLaunchSimulation,
 }, ref) => {
   const isWebSearchEnabled = config.tools.includes('Web Search');
   const webSearchConfig = config.webSearchConfig || { searchDepth: 'Shallow', filterResults: true, resultCount: 5, keywords: '' };
@@ -143,6 +147,12 @@ export const AgentConfiguratorPanel = forwardRef<HTMLDivElement, AgentConfigurat
         )}
 
       </Card.Content>
+      <Card.Footer>
+          <Button onClick={onLaunchSimulation} className="w-full !bg-slate-600 hover:!bg-slate-500">
+              <DicesIcon className="w-5 h-5" />
+              Launch Simulation Chamber
+          </Button>
+      </Card.Footer>
     </Card>
   );
 });

@@ -17,7 +17,7 @@ const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className,
 CardHeader.displayName = 'CardHeader';
 
 const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className, ...props }) => (
-  <h3 className={`text-lg font-semibold text-white ${className}`} {...props} />
+  <h3 className={`text-xl font-semibold text-white text-glow ${className}`} {...props} />
 );
 CardTitle.displayName = 'CardTitle';
 

@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
-// FIX: Import UnifiedConfig to handle different asset types.
-import type { SavedModel, ModelConfig, UnifiedConfig, ModelVersion } from '../types';
+import React, { useState, useRef } from 'react';
+import type { SavedModel, UnifiedConfig, ModelVersion } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { TrashIcon, UploadCloudIcon, HistoryIcon, CheckCircleIcon, XCircleIcon } from './icons/Icons';
+import { TrashIcon, HistoryIcon, CheckCircleIcon, XCircleIcon, SigmaIcon, FileTextIcon, UploadCloudIcon } from './icons/Icons';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface GalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
   models: SavedModel[];
-  // FIX: Update onLoad to pass UnifiedConfig to support loading all asset types.
   onLoad: (config: UnifiedConfig, modelName: string) => void;
   onDelete: (modelId: number) => void;
   onPublishRequest: (version: ModelVersion, modelName: string) => void;
+  onAnalyzeImport: (config: UnifiedConfig) => void;
 }
 
 const DetailItem: React.FC<{ label: string; value: string | number; }> = ({ label, value }) => (
@@ -34,9 +33,10 @@ const StatusItem: React.FC<{ label: string; active: boolean }> = ({ label, activ
 );
 
 
-export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, models, onLoad, onDelete, onPublishRequest }) => {
+export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, models, onLoad, onDelete, onPublishRequest, onAnalyzeImport }) => {
   const [expandedModelId, setExpandedModelId] = useState<number | null>(null);
   const [modelForDeletion, setModelForDeletion] = useState<SavedModel | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -51,33 +51,71 @@ export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, mod
     setModelForDeletion(null);
   };
 
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const config = JSON.parse(e.target?.result as string) as UnifiedConfig;
+          onAnalyzeImport(config);
+          onClose();
+        } catch (error) {
+          console.error("Failed to parse blueprint:", error);
+          alert("Error: Invalid blueprint file. Please upload a valid JSON configuration.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 modal-enter"
         onClick={onClose}
       >
         <Card 
           className="w-full max-w-4xl max-h-[80vh] flex flex-col"
           onClick={e => e.stopPropagation()}
         >
-          <Card.Header className="flex justify-between items-center">
+          <Card.Header className="flex justify-between items-center flex-wrap gap-2">
             <div>
-              <Card.Title>Model Blueprint Gallery</Card.Title>
+              <Card.Title>Blueprint Gallery</Card.Title>
               <Card.Description>Manage your saved AI model configurations and their version history.</Card.Description>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+             <div className="flex items-center gap-2">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".json"
+                    onChange={handleFileImport}
+                />
+                <Button onClick={() => fileInputRef.current?.click()} className="!bg-indigo-600 hover:!bg-indigo-500">
+                    <FileTextIcon className="w-4 h-4" />
+                    Import Blueprint
+                </Button>
+                <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+             </div>
           </Card.Header>
           <Card.Content className="overflow-y-auto space-y-3 pr-2 scrollbar-thin">
             {models.length > 0 ? (
               models.map(model => (
                 <div key={model.id} className="bg-slate-800/50 rounded-lg transition-all">
                   <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex-grow">
-                          <h4 className="font-semibold text-[rgb(var(--color-primary-light-val))] text-lg">{model.name}</h4>
-                          <p className="text-xs text-slate-400 mt-1">
-                              {model.versions.length} version{model.versions.length > 1 ? 's' : ''} saved. Last updated: {new Date(model.versions[model.versions.length - 1].savedAt).toLocaleString()}
-                          </p>
+                      <div className="flex items-center gap-4">
+                        <div 
+                            className="w-12 h-12 flex-shrink-0 bg-black/20 rounded-md flex items-center justify-center border border-[rgb(var(--color-border-val)/0.2)] p-1"
+                            title="Asset Sigil"
+                            dangerouslySetInnerHTML={{ __html: model.sigil || '<svg viewBox="0 0 24 24"><path d="M18 7V4H6v3 M12 4v16 M6 20v-3h12v3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>' }}
+                        />
+                        <div className="flex-grow">
+                            <h4 className="font-semibold text-[rgb(var(--color-primary-light-val))] text-lg">{model.name}</h4>
+                            <p className="text-xs text-slate-400 mt-1">
+                                {model.versions.length} version{model.versions.length > 1 ? 's' : ''} saved. Last updated: {new Date(model.versions[model.versions.length - 1].savedAt).toLocaleString()}
+                            </p>
+                        </div>
                       </div>
                       <div className="flex gap-2 self-end sm:self-center">
                           <Button onClick={() => toggleExpand(model.id)} className="!bg-slate-600 hover:!bg-slate-500 focus:!ring-slate-500 text-sm px-3 py-1">
@@ -98,7 +136,6 @@ export const GalleryModal: React.FC<GalleryModalProps> = ({ isOpen, onClose, mod
                                       <p className="text-sm text-slate-200 font-mono">
                                           Saved: {new Date(version.savedAt).toLocaleString()}
                                       </p>
-                                      {/* FIX: Conditionally render details based on config type. */}
                                       <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 p-2 bg-black/20 rounded">
                                           {version.config.type === 'llm' ? (
                                               <>

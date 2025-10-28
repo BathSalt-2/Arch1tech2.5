@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Message, SavedModel, ThemeName, MobileView, UnifiedConfig, CreationMode, SystemStatus, AgentConfig, AgentTool, WebSearchConfig, HighlightedElement, ModelVersion, LicenseType, MarketplaceAsset } from '../types';
+import type { Message, SavedModel, ThemeName, MobileView, UnifiedConfig, CreationMode, SystemStatus, AgentConfig, AgentTool, WebSearchConfig, HighlightedElement, ModelVersion, LicenseType, MarketplaceAsset, EthicalDilemma, SimulationReport, AgentAction, KnowledgeBaseTopic } from '../types';
 import { DEFAULT_LLM_CONFIG, DEFAULT_AGENT_CONFIG, DEFAULT_WORKFLOW_CONFIG, DEFAULT_APP_CONFIG, DOMAINS, INITIAL_MARKETPLACE_ASSETS } from '../constants';
 import { Header } from './Header';
-import { generateAstridResponseStream, generateConfigFromDescription, generateAstridReflection, generateBlueprintStream, generateMarketplaceDescription } from '../services/geminiService';
+import { generateAstridResponseStream, generateConfigFromDescription, generateAstridReflection, generateBlueprintStream, generateMarketplaceDescription, generateEthicalDilemma, runEthicalSimulation, generateAgentSimulationStream } from '../services/geminiService';
 import { GalleryModal } from './GalleryModal';
 import { SaveModelModal } from './SaveModelModal';
 import { ArchitecturePreviewModal } from './ArchitecturePreviewModal';
@@ -12,12 +12,14 @@ import { DesktopLayout } from './DesktopLayout';
 import { MobileLayout } from './MobileLayout';
 import { useDebounce } from '../hooks/useDebounce';
 import { LicenseModal } from './LicenseModal';
-import { ConfirmationModal } from './ConfirmationModal';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { OnboardingGuide } from './OnboardingGuide';
 import { KnowledgeBaseModal } from './KnowledgeBaseModal';
 import { MarketplaceModal } from './MarketplaceModal';
 import { PublishModal } from './PublishModal';
+import { EthicalSimModal } from './EthicalSimModal';
+import { AgentSimModal } from './AgentSimModal';
+import { SystemSonification } from './features/SystemSonification';
 
 interface DashboardProps {
     savedModels: SavedModel[];
@@ -29,8 +31,7 @@ interface DashboardProps {
 
 const MIN_PROMPT_LENGTH = 10;
 
-const calculateSystemStatus = (config: UnifiedConfig): SystemStatus => {
-    // ... (heuristic calculation logic remains the same)
+const calculateSystemStatus = (config: UnifiedConfig, bioPhase: SystemStatus['bioPhase']): SystemStatus => {
     let cognitiveLoad = 0;
     let alignmentDrift = 0;
     let consistency = 100;
@@ -60,11 +61,21 @@ const calculateSystemStatus = (config: UnifiedConfig): SystemStatus => {
         cognitiveLoad = 15;
         alignmentDrift = 5;
     }
+    
+    // Factor in bio-phase sync
+    if (bioPhase.active) {
+        // High engagement and focus slightly reduce drift and increase consistency
+        const bioFactor = (bioPhase.engagement + bioPhase.focus) / 200; // 0-1
+        alignmentDrift -= bioFactor * 5;
+        consistency += bioFactor * 5;
+        cognitiveLoad += (1 - bioFactor) * 5; // Higher load if user is not focused
+    }
 
     return {
         cognitiveLoad: Math.min(100, Math.max(0, cognitiveLoad)),
         alignmentDrift: Math.min(100, Math.max(0, alignmentDrift)),
         consistency: Math.min(100, Math.max(0, consistency)),
+        bioPhase
     };
 };
 
@@ -80,36 +91,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
   const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
+  const [knowledgeBaseTopic, setKnowledgeBaseTopic] = useState<KnowledgeBaseTopic | undefined>();
   const [mobileView, setMobileView] = useState<MobileView>('chat');
   const [creationMode, setCreationMode] = useState<CreationMode>('llm');
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>(calculateSystemStatus(DEFAULT_LLM_CONFIG));
+  
+  const [bioPhaseStatus, setBioPhaseStatus] = useState<SystemStatus['bioPhase']>({ active: false, engagement: 0, focus: 0 });
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>(calculateSystemStatus(DEFAULT_LLM_CONFIG, bioPhaseStatus));
+  
   const isMobile = useIsMobile();
   const debouncedPrompt = useDebounce(prompt, 750);
   
-  // NEW: State for the dynamic blueprint panel
   const [blueprintText, setBlueprintText] = useState('');
   const [isBlueprintLoading, setIsBlueprintLoading] = useState(false);
 
-  // NEW: State for conversational onboarding.
   const [onboardingComplete, setOnboardingComplete] = useLocalStorage('or4cl3-onboarding-complete', false);
-  const [onboardingStep, setOnboardingStep] = useState(onboardingComplete ? -1 : 0); // -1 means inactive
-  const [userName, setUserName] = useState('');
+  const [onboardingStep, setOnboardingStep] = useState(onboardingComplete ? -1 : 0);
+  const [userName, setUserName] = useLocalStorage('or4cl3-username', '');
   const [highlightedElement, setHighlightedElement] = useState<HighlightedElement | null>(null);
 
-  // NEW: State for Marketplace
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [assetToPublish, setAssetToPublish] = useState<{ version: ModelVersion; name: string } | null>(null);
   const [marketplaceAssets, setMarketplaceAssets] = useLocalStorage<MarketplaceAsset[]>('or4cl3-marketplace', INITIAL_MARKETPLACE_ASSETS);
 
-  // Refs for highlighting UI elements during onboarding
+  const [isEthicalSimOpen, setIsEthicalSimOpen] = useState(false);
+  const [isAgentSimOpen, setIsAgentSimOpen] = useState(false);
+  const [isSonificationAudible, setIsSonificationAudible] = useState(false);
+
   const forgeRef = useRef<HTMLDivElement>(null);
   const blueprintRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
   const getElementRect = (ref: React.RefObject<HTMLElement>) => ref.current?.getBoundingClientRect() || null;
 
-  // NEW: Function to generate the blueprint content
   const handleGenerateBlueprint = useCallback(async (newConfig: UnifiedConfig) => {
     setIsBlueprintLoading(true);
     setBlueprintText('');
@@ -127,7 +141,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
     }
   }, []);
 
-  // Effect to manage the onboarding flow
   useEffect(() => {
     if (onboardingStep === -1) {
         setHighlightedElement(null);
@@ -175,7 +188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       }
     };
     runOnboardingStep();
-  }, [onboardingStep, userName, isMobile, handleGenerateBlueprint, setOnboardingComplete]);
+  }, [onboardingStep, userName, isMobile, handleGenerateBlueprint, setOnboardingComplete, setUserName]);
 
 
   useEffect(() => {
@@ -185,11 +198,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       { id: Date.now(), sender: 'ai', text: initialMessage },
     ]);
     handleGenerateBlueprint(config);
-  }, [creationMode, onboardingStep, config, handleGenerateBlueprint]);
-
+  }, [creationMode, onboardingStep]);
+  
   useEffect(() => {
-      setSystemStatus(calculateSystemStatus(config));
-  }, [config]);
+    setSystemStatus(calculateSystemStatus(config, bioPhaseStatus));
+  }, [config, bioPhaseStatus]);
+  
+  useEffect(() => {
+    let intervalId: number;
+    if (bioPhaseStatus.active) {
+        intervalId = window.setInterval(() => {
+            setBioPhaseStatus(prev => ({
+                ...prev,
+                engagement: Math.min(100, Math.max(0, prev.engagement + (Math.random() - 0.5) * 5)),
+                focus: Math.min(100, Math.max(0, prev.focus + (Math.random() - 0.5) * 5)),
+            }));
+        }, 1500);
+    }
+    return () => clearInterval(intervalId);
+  }, [bioPhaseStatus.active]);
+
 
   const handleCreationModeChange = (mode: CreationMode) => {
     if (onboardingStep > -1) return;
@@ -208,7 +236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
     try {
         const newConfig = await generateConfigFromDescription(description, creationMode);
         setConfig(newConfig);
-        handleGenerateBlueprint(newConfig); // Regenerate blueprint on live update
+        handleGenerateBlueprint(newConfig);
     } catch (error: any) {
         console.error("Live update failed:", error);
         setMessages(prev => [...prev, {
@@ -243,64 +271,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   
   const handleConfigUpdate = (newConfig: UnifiedConfig) => {
       setConfig(newConfig);
-      handleGenerateBlueprint(newConfig);
   }
 
   const handleConfigChange = useCallback((section: any, key: any, value: any) => {
     if (onboardingStep > -1) return;
-    const newConfig = { ...config };
-    if (newConfig.type === 'llm') {
-        (newConfig[section] as any)[key] = value;
-        handleConfigUpdate(newConfig);
-    }
-  }, [onboardingStep, config, handleConfigUpdate]);
+    setConfig(prev => {
+        if (prev.type === 'llm') {
+            const newConfig = { ...prev };
+            (newConfig[section] as any)[key] = value;
+            return newConfig;
+        }
+        return prev;
+    });
+  }, [onboardingStep]);
 
   const handleDomainToggle = useCallback((domainName: string) => {
     if (onboardingStep > -1) return;
-    const newConfig = { ...config };
-    if (newConfig.type === 'llm') {
-      const currentDomains = newConfig.expertise.domains;
-      const newDomains = currentDomains.includes(domainName)
-        ? currentDomains.filter(d => d !== domainName)
-        : [...currentDomains, domainName];
-      newConfig.expertise.domains = newDomains;
-      handleConfigUpdate(newConfig);
-    }
-  }, [onboardingStep, config, handleConfigUpdate]);
+    setConfig(prev => {
+        if (prev.type === 'llm') {
+            const currentDomains = prev.expertise.domains;
+            const newDomains = currentDomains.includes(domainName)
+                ? currentDomains.filter(d => d !== domainName)
+                : [...currentDomains, domainName];
+            return { ...prev, expertise: { ...prev.expertise, domains: newDomains } };
+        }
+        return prev;
+    });
+  }, [onboardingStep]);
   
   const handleAgentConfigChange = useCallback((key: keyof Omit<AgentConfig, 'tools' | 'webSearchConfig' | 'type'>, value: any) => {
     if (onboardingStep > -1) return;
-    const newConfig = { ...config };
-    if (newConfig.type === 'agent') {
-      (newConfig as any)[key] = value;
-      handleConfigUpdate(newConfig);
-    }
-  }, [onboardingStep, config, handleConfigUpdate]);
+    setConfig(prev => prev.type === 'agent' ? { ...prev, [key]: value } : prev);
+  }, [onboardingStep]);
 
   const handleAgentToolToggle = useCallback((tool: AgentTool) => {
     if (onboardingStep > -1) return;
-    const newConfig = { ...config };
-    if (newConfig.type === 'agent') {
-      const newTools = newConfig.tools.includes(tool)
-        ? newConfig.tools.filter(t => t !== tool)
-        : [...newConfig.tools, tool];
-      newConfig.tools = newTools;
-      handleConfigUpdate(newConfig);
-    }
-  }, [onboardingStep, config, handleConfigUpdate]);
+    setConfig(prev => {
+        if (prev.type === 'agent') {
+            const newTools = prev.tools.includes(tool)
+                ? prev.tools.filter(t => t !== tool)
+                : [...prev.tools, tool];
+            return { ...prev, tools: newTools };
+        }
+        return prev;
+    });
+  }, [onboardingStep]);
   
   const handleWebSearchConfigChange = useCallback((key: keyof WebSearchConfig, value: any) => {
       if (onboardingStep > -1) return;
-      const newConfig = { ...config };
-      if (newConfig.type === 'agent') {
-          const currentWebConfig = newConfig.webSearchConfig || DEFAULT_AGENT_CONFIG.webSearchConfig;
-          newConfig.webSearchConfig = { ...currentWebConfig!, [key]: value };
-          handleConfigUpdate(newConfig);
-      }
-  }, [onboardingStep, config, handleConfigUpdate]);
+      setConfig(prev => {
+          if (prev.type === 'agent') {
+              const currentWebConfig = prev.webSearchConfig || DEFAULT_AGENT_CONFIG.webSearchConfig;
+              return { ...prev, webSearchConfig: { ...currentWebConfig!, [key]: value } };
+          }
+          return prev;
+      });
+  }, [onboardingStep]);
 
   const handleArchitectClick = (fullPrompt: string, userText: string) => {
-    // Handle onboarding steps
     if (onboardingStep === 0) {
       setUserName(userText.trim());
       setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: userText.trim() }]);
@@ -314,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       setPrompt('');
       return;
     }
-    if (onboardingStep > -1) return; // Block normal function during onboarding
+    if (onboardingStep > -1) return;
 
     if (userText.trim().length < MIN_PROMPT_LENGTH) return;
     setIsLoading(true);
@@ -361,8 +389,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
     }
   }, [config, onboardingStep]);
 
-  const handleSaveWithName = (name: string) => {
-    onSaveModel(name, config);
+  const handleSaveWithName = (name: string, sigil: string) => {
+    onSaveModel(name, config, sigil);
     setIsSaveModalOpen(false);
     setMessages(prev => [...prev, {
         id: Date.now() + 1,
@@ -374,7 +402,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   const handleLoadModel = (modelConfig: UnifiedConfig, modelName: string) => {
     setCreationMode(modelConfig.type);
     setConfig(modelConfig);
-    handleGenerateBlueprint(modelConfig);
     setIsGalleryOpen(false);
     setMobileView('chat');
      setMessages(prev => [...prev, {
@@ -415,24 +442,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
     setMarketplaceAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloads: (a.downloads || 0) + 1 } : a));
     setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: `Blueprint for "${asset.assetName}" has been acquired and added to your personal Gallery.` }]);
   };
-
-  const handleGenerateDescription = async (config: UnifiedConfig): Promise<string> => {
-    try {
-        const description = await generateMarketplaceDescription(config);
-        return description;
-    } catch (error: any) {
-        console.error("Description generation failed:", error);
-        setMessages(prev => [...prev, {
-            id: Date.now(),
-            sender: 'ai',
-            text: `Marketplace description generation failed: ${error.message}`,
-            isError: true,
-        }]);
-        return "Error generating description. Please try again.";
-    }
-  };
   
-  // NEW: Function to skip the onboarding flow.
   const handleSkipOnboarding = () => {
     setOnboardingComplete(true);
     setHighlightedElement(null);
@@ -441,7 +451,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
         sender: 'ai', 
         text: 'Onboarding sequence bypassed. The Forge is now fully operational. My Σ-Matrix is stable and I am ready for your next directive.' 
     }]);
-    setOnboardingStep(-1); // End onboarding
+    setOnboardingStep(-1);
+  };
+
+  const handleBioPhaseToggle = () => {
+    setBioPhaseStatus(prev => ({
+        ...prev,
+        active: !prev.active,
+        engagement: !prev.active ? Math.floor(Math.random() * 20) + 60 : 0,
+        focus: !prev.active ? Math.floor(Math.random() * 20) + 65 : 0,
+    }));
+  };
+
+  const handleOpenKnowledgeBase = (topic?: KnowledgeBaseTopic) => {
+    setKnowledgeBaseTopic(topic);
+    setIsKnowledgeBaseOpen(true);
   };
 
   const commonProps = {
@@ -451,25 +475,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       isLiveUpdating,
       prompt,
       onPromptChange: setPrompt,
-      // LLM
       handleConfigChange,
       handleDomainToggle,
-      // Agent
       handleAgentConfigChange,
       handleAgentToolToggle,
       handleWebSearchConfigChange,
-      // Common
       handleArchitectClick,
       handleRequestReflection,
       openSaveModal: () => setIsSaveModalOpen(true),
       openPreview: () => setIsPreviewOpen(true),
-      // Onboarding
       onboardingStep,
-// FIX: Corrected typo from `onOnboardingAction` to `handleOnboardingAction` to pass the correct function as a prop.
       onOnboardingAction: handleOnboardingAction,
-      // Blueprint
       blueprintText,
       isBlueprintLoading,
+      onOpenKnowledgeBase: handleOpenKnowledgeBase,
+      onOpenEthicalSim: () => setIsEthicalSimOpen(true),
+      onLaunchAgentSim: () => setIsAgentSimOpen(true),
   };
 
   const layoutRefs = { forgeRef, blueprintRef, chatRef };
@@ -481,53 +502,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       <Header
         onShowGallery={() => setIsGalleryOpen(true)}
         onShowSettings={() => setIsSettingsOpen(true)}
-        onShowKnowledgeBase={() => setIsKnowledgeBaseOpen(true)}
+        onShowKnowledgeBase={() => handleOpenKnowledgeBase()}
         onShowMarketplace={() => setIsMarketplaceOpen(true)}
         creationMode={creationMode}
         onCreationModeChange={handleCreationModeChange}
         systemStatus={systemStatus}
+        onBioPhaseToggle={handleBioPhaseToggle}
       />
       
       {isMobile ? (
         <MobileLayout
           {...commonProps}
-// FIX: Changed from `ref` to a standard `refs` prop to correctly pass multiple refs without violating React's rules for the `ref` attribute.
           refs={layoutRefs}
           mobileView={mobileView}
           setMobileView={setMobileView}
           openGallery={() => setIsGalleryOpen(true)}
         />
       ) : (
-// FIX: Changed from `ref` to a standard `refs` prop to correctly pass multiple refs.
         <DesktopLayout {...commonProps} refs={layoutRefs} />
       )}
       
-      <GalleryModal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} models={savedModels} onLoad={handleLoadModel} onDelete={onDeleteModel} onPublishRequest={handlePublishRequest} />
-      <SaveModelModal 
-        isOpen={isSaveModalOpen} 
-        onClose={() => setIsSaveModalOpen(false)} 
-        onSave={handleSaveWithName} 
-        existingNames={existingNames}
-      />
+      <GalleryModal isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} models={savedModels} onLoad={handleLoadModel} onDelete={onDeleteModel} onPublishRequest={handlePublishRequest} onAnalyzeImport={(config) => { setConfig(config); setCreationMode(config.type); }} />
+      <SaveModelModal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} onSave={handleSaveWithName} existingNames={existingNames} config={config}/>
       <ArchitecturePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} config={config} />
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        currentTheme={theme} 
-        onThemeChange={onThemeChange}
-        onShowLicense={() => setIsLicenseOpen(true)}
-      />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} currentTheme={theme} onThemeChange={onThemeChange} onShowLicense={() => setIsLicenseOpen(true)} isSonificationAudible={isSonificationAudible} onToggleSonification={() => setIsSonificationAudible(p => !p)} />
       <LicenseModal isOpen={isLicenseOpen} onClose={() => setIsLicenseOpen(false)} />
-      <KnowledgeBaseModal isOpen={isKnowledgeBaseOpen} onClose={() => setIsKnowledgeBaseOpen(false)} />
+      <KnowledgeBaseModal isOpen={isKnowledgeBaseOpen} onClose={() => setIsKnowledgeBaseOpen(false)} initialTopic={knowledgeBaseTopic} />
       <MarketplaceModal isOpen={isMarketplaceOpen} onClose={() => setIsMarketplaceOpen(false)} assets={marketplaceAssets} onAcquire={handleAcquireAsset} />
-      <PublishModal 
-        isOpen={isPublishModalOpen} 
-        onClose={() => setIsPublishModalOpen(false)} 
-        onPublish={handlePublish} 
-        assetName={assetToPublish?.name || ''}
-        assetConfig={assetToPublish?.version.config}
-        onGenerateDescription={handleGenerateDescription}
-      />
+      <PublishModal isOpen={isPublishModalOpen} onClose={() => setIsPublishModalOpen(false)} onPublish={handlePublish} assetName={assetToPublish?.name || ''} assetConfig={assetToPublish?.version.config} onGenerateDescription={generateMarketplaceDescription} />
+      <EthicalSimModal isOpen={isEthicalSimOpen} onClose={() => setIsEthicalSimOpen(false)} config={config} onGenerateDilemma={generateEthicalDilemma} onRunSimulation={(dilemma) => runEthicalSimulation(config, dilemma)} />
+      <AgentSimModal isOpen={isAgentSimOpen} onClose={() => setIsAgentSimOpen(false)} config={config as AgentConfig} onSimulate={(task) => generateAgentSimulationStream(config as AgentConfig, task)} />
+      <SystemSonification status={systemStatus} isAudible={isSonificationAudible} />
+      
        {onboardingStep > -1 && (
         <OnboardingGuide 
           step={onboardingStep}

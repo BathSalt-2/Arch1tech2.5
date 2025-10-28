@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Message, MobileView, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool } from '../types';
+import type { Message, MobileView, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool, KnowledgeBaseTopic } from '../types';
 import { DOMAINS } from '../constants';
 import { ConfiguratorPanel } from './ConfiguratorPanel';
 import { ChatPanel } from './ChatPanel';
@@ -7,6 +7,7 @@ import { BottomNavBar } from './BottomNavBar';
 import { Card } from './ui/Card';
 import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
 import { BlueprintPanel } from './BlueprintPanel';
+import { GenerativeUIPanel } from './GenerativeUIPanel';
 
 interface LayoutRefs {
     forgeRef: React.RefObject<HTMLDivElement>;
@@ -38,6 +39,9 @@ interface MobileLayoutProps {
     blueprintText: string;
     isBlueprintLoading: boolean;
     refs: LayoutRefs;
+    onOpenKnowledgeBase: (topic: KnowledgeBaseTopic) => void;
+    onOpenEthicalSim: () => void;
+    onLaunchAgentSim: () => void;
 }
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -64,6 +68,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
     blueprintText,
     isBlueprintLoading,
     refs,
+    onOpenKnowledgeBase,
+    onOpenEthicalSim,
+    onLaunchAgentSim,
 }) => {
     const { forgeRef, blueprintRef, chatRef } = refs;
 
@@ -85,6 +92,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                         onReflect={handleRequestReflection}
                         onboardingStep={onboardingStep}
                         onOnboardingAction={onOnboardingAction as any}
+                        onOpenKnowledgeBase={onOpenKnowledgeBase}
+                        onOpenEthicalSim={onOpenEthicalSim}
                     />
                 );
             case 'configure':
@@ -106,12 +115,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                             onToolToggle={handleAgentToolToggle}
                             onWebSearchConfigChange={handleWebSearchConfigChange}
                             isLiveUpdating={isLiveUpdating}
+                            onLaunchSimulation={onLaunchAgentSim}
                         />;
+                    case 'app':
+                        return <GenerativeUIPanel ref={forgeRef} config={config} />;
                     default:
                         return <Card className="h-full" ref={forgeRef}>
                             <Card.Header>
                                 <Card.Title>{config.type.charAt(0).toUpperCase() + config.type.slice(1)} Configuration</Card.Title>
-                                <Card.Description>Live updates for this asset type are reflected below.</Card.Description>
+                                <Card.Description>This asset type is configured via the command console.</Card.Description>
                             </Card.Header>
                             <Card.Content className="overflow-auto scrollbar-thin">
                                 <pre className="text-xs bg-slate-900/50 p-2 rounded-md">{JSON.stringify(config, null, 2)}</pre>
@@ -124,6 +136,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                         ref={blueprintRef}
                         blueprintText={blueprintText}
                         isLoading={isBlueprintLoading}
+                        config={config}
                     />
                 );
             default:

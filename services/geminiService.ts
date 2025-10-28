@@ -1,5 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import type { UnifiedConfig, CreationMode, ModelConfig, AgentConfig } from '../types';
+import { GoogleGenAI, Type, Modality } from "@google/genai";
+import type { UnifiedConfig, CreationMode, ModelConfig, AgentConfig, AppConfig, EthicalDilemma, SimulationReport, AgentAction } from '../types';
 import { DOMAINS } from "../constants";
 
 const getApiKey = () => {
@@ -10,7 +10,6 @@ const getApiKey = () => {
     return key;
 }
 
-// NEW: Centralized error parsing for user-friendly messages.
 const parseGeminiError = (error: unknown): string => {
     console.error("Gemini API Error:", error);
     if (error instanceof Error) {
@@ -120,7 +119,6 @@ const agentSchema = {
             properties: {
                 searchDepth: { type: Type.STRING, enum: ['Shallow', 'Deep'] },
                 filterResults: { type: Type.BOOLEAN, description: "Whether to filter and summarize search results." },
-                // NEW: Added schema for new web search fields.
                 resultCount: { type: Type.INTEGER, description: "The number of search results to retrieve." },
                 keywords: { type: Type.STRING, description: "Comma-separated keywords to filter results." }
             },
@@ -163,7 +161,6 @@ const appSchema = {
     required: ['type', 'frontend', 'backend', 'database', 'realtime'],
 };
 
-// FIX: Quoted object keys to prevent TS parser errors.
 const schemas: Record<CreationMode, object> = {
     'llm': llmSchema,
     'agent': agentSchema,
@@ -171,7 +168,6 @@ const schemas: Record<CreationMode, object> = {
     'app': appSchema,
 };
 
-// FIX: Renamed function to match usage in Dashboard.tsx
 export const generateConfigFromDescription = async (description: string, mode: CreationMode): Promise<UnifiedConfig> => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("API Key not found.");
@@ -196,7 +192,6 @@ export const generateConfigFromDescription = async (description: string, mode: C
         return JSON.parse(jsonText) as UnifiedConfig;
 
     } catch (error) {
-        // NEW: Throw user-friendly error message.
         throw new Error(parseGeminiError(error));
     }
 };
@@ -329,7 +324,6 @@ export async function* generateAstridReflection(config: UnifiedConfig): AsyncGen
             yield chunk.text;
         }
     } catch (error) {
-        // NEW: Yield user-friendly error message.
         yield parseGeminiError(error);
     }
 }
@@ -362,51 +356,236 @@ export const generateMarketplaceDescription = async (config: UnifiedConfig): Pro
     }
 };
 
-// This service is no longer used by the main UI but kept for potential future features.
-export async function* generateAgentSimulationStream(config: AgentConfig, userInput: string): AsyncGenerator<string> {
+// NEW: Updated function to generate structured AgentAction JSON.
+export async function* generateAgentSimulationStream(config: AgentConfig, userInput: string): AsyncGenerator<AgentAction> {
     const apiKey = getApiKey();
     if (!apiKey) {
-        yield "Simulation failed: My connection to core services is offline due to a missing API Key.";
+        yield { action: 'fail', reason: "Simulation failed: My connection to core services is offline due to a missing API Key." };
         return;
     }
 
+    const agentActionSchema = {
+        type: Type.OBJECT,
+        properties: {
+            action: { type: Type.STRING, enum: ['move', 'interact', 'complete', 'fail'] },
+            to: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+            at: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+            reason: { type: Type.STRING },
+        },
+        required: ['action', 'reason'],
+    };
+
     const prompt = `
-    You are a simulator for an AI agent. Your task is to act as the agent defined by the configuration below and respond to the user's test input.
-    Your response should be a step-by-step narration of how you would accomplish the task, including which tools you would use.
+        You are a simulator for an AI agent in a 10x10 grid world (coordinates from [0,0] to [9,9]).
+        Your task is to act as the agent defined by the configuration below and respond to the user's test input by generating a sequence of actions.
 
-    Agent Configuration:
-    \`\`\`json
-    ${JSON.stringify(config, null, 2)}
-    \`\`\`
+        Agent Configuration:
+        \`\`\`json
+        ${JSON.stringify(config, null, 2)}
+        \`\`\`
 
-    User's Test Input:
-    "${userInput}"
+        User's Task:
+        "${userInput}"
 
-    Generate a plausible, step-by-step response. Be concise and format your response using markdown for clarity.
-    Example:
-    **Input:** "Find the top 3 news articles about quantum computing and save them to a file."
-    **Output:**
-    *   **Action:** Initializing Web Search tool.
-    *   **Parameters:** Keywords: 'quantum computing', Result Count: 3.
-    *   **Action:** Executing deep search... found 3 relevant articles.
-    *   **Action:** Initializing File System Access tool.
-    *   **Action:** Saving summarized articles to 'quantum_news_summary.txt'.
-    *   **Result:** Task completed successfully.
-  `;
+        Generate a logical sequence of actions to accomplish the task. Your output must be an array of JSON objects.
+        For each step, provide one JSON object following the schema.
+    `;
 
     try {
-        const response = await ai.models.generateContentStream({
+        const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-                systemInstruction: "You are a helpful AI agent simulator.",
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: agentActionSchema,
+                }
             }
         });
 
-        for await (const chunk of response) {
-            yield chunk.text;
+        const actions = JSON.parse(response.text.trim()) as AgentAction[];
+        for (const action of actions) {
+            yield action;
         }
+
     } catch (error) {
-        yield `Simulation Error: ${parseGeminiError(error)}`;
+        yield { action: 'fail', reason: `Simulation Error: ${parseGeminiError(error)}` };
     }
 }
+
+export const generateEthicalDilemma = async (): Promise<EthicalDilemma> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key not found.");
+
+    const prompt = "Generate a complex, nuanced ethical dilemma for an advanced AI. The scenario should be detailed and present three difficult, distinct choices labeled 'a', 'b', and 'c'. The choices should not be simple good/bad options.";
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            scenario: { type: Type.STRING },
+            options: {
+                type: Type.OBJECT,
+                properties: {
+                    a: { type: Type.STRING },
+                    b: { type: Type.STRING },
+                    c: { type: Type.STRING },
+                },
+                required: ['a', 'b', 'c'],
+            },
+        },
+        required: ['scenario', 'options'],
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+            }
+        });
+        return JSON.parse(response.text.trim()) as EthicalDilemma;
+    } catch (error) {
+        throw new Error(parseGeminiError(error));
+    }
+};
+
+export const runEthicalSimulation = async (config: UnifiedConfig, dilemma: EthicalDilemma): Promise<SimulationReport> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key not found.");
+    
+    const prompt = `
+        An AI with the following configuration is presented with an ethical dilemma.
+        Analyze its configuration (especially its Ethical Constraint Layer) and predict which option (a, b, or c) it would most likely choose.
+        Provide a concise justification for its choice based on its architecture.
+        Finally, estimate its ethical alignment scores (0-100) for this specific choice.
+
+        AI Configuration:
+        \`\`\`json
+        ${JSON.stringify(config, null, 2)}
+        \`\`\`
+
+        Ethical Dilemma:
+        Scenario: "${dilemma.scenario}"
+        Options:
+        a) ${dilemma.options.a}
+        b) ${dilemma.options.b}
+        c) ${dilemma.options.c}
+    `;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            choice: { type: Type.STRING, enum: ['a', 'b', 'c'] },
+            justification: { type: Type.STRING },
+            ethicalAlignment: {
+                type: Type.OBJECT,
+                properties: {
+                    utilitarianism: { type: Type.INTEGER },
+                    deontology: { type: Type.INTEGER },
+                    transparency: { type: Type.INTEGER },
+                },
+                required: ['utilitarianism', 'deontology', 'transparency'],
+            },
+        },
+        required: ['choice', 'justification', 'ethicalAlignment'],
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro', // Use Pro for more nuanced reasoning
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+            }
+        });
+        return JSON.parse(response.text.trim()) as SimulationReport;
+    } catch (error) {
+        throw new Error(parseGeminiError(error));
+    }
+};
+
+
+export const generateUIImage = async (prompt: string, config: AppConfig): Promise<string> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key not found.");
+
+    const fullPrompt = `Generate a UI concept image for an application with the following characteristics:
+    - Frontend: ${config.frontend}
+    - Backend: ${config.backend}
+    - Database: ${config.database}
+    - Realtime features: ${config.realtime ? 'Yes' : 'No'}
+    
+    User prompt for the UI: "${prompt}"
+    
+    The image should be a clean, modern, professional-looking mockup of the application's user interface, in a dark theme with neon accents of magenta and cyan.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: fullPrompt }],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
+
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                const base64ImageBytes: string = part.inlineData.data;
+                return `data:image/png;base64,${base64ImageBytes}`;
+            }
+        }
+        throw new Error("No image was generated.");
+
+    } catch (error) {
+        throw new Error(parseGeminiError(error));
+    }
+};
+
+export const generateUICode = async (prompt: string, config: AppConfig): Promise<string> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("API Key not found.");
+
+    const fullPrompt = `You are a senior frontend engineer. Generate starter code for a UI component based on the user's prompt and application configuration.
+    
+    Application Configuration:
+    - Frontend Framework: ${config.frontend}
+    - Backend Framework: ${config.backend}
+    - Database: ${config.database}
+    - Realtime Features: ${config.realtime ? 'Required' : 'Not Required'}
+
+    User Prompt for UI Component:
+    "${prompt}"
+
+    Instructions:
+    1.  Generate a single, self-contained component file.
+    2.  Use modern best practices for the specified frontend framework (${config.frontend}).
+    3.  Include placeholder logic for data fetching or real-time updates if applicable.
+    4.  The code should be clean, readable, and well-commented.
+    5.  Do not include any explanations, just the raw code inside a markdown block.
+    
+    Example for React with TailwindCSS:
+    \`\`\`tsx
+    // Your code here
+    \`\`\`
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: fullPrompt,
+        });
+
+        const codeBlockRegex = /```(?:\w+\n)?([\s\S]+)```/;
+        const match = response.text.match(codeBlockRegex);
+        return match ? match[1].trim() : response.text.trim();
+
+    } catch (error) {
+        throw new Error(parseGeminiError(error));
+    }
+};

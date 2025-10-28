@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { LibraryIcon } from './icons/Icons';
 import { KNOWLEDGE_BASE_CONTENT } from './knowledgeBaseContent';
+import type { KnowledgeBaseTopic } from '../types';
 
 interface KnowledgeBaseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTopic?: KnowledgeBaseTopic;
 }
 
-export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({ isOpen, onClose }) => {
+export const KnowledgeBaseModal: React.FC<KnowledgeBaseModalProps> = ({ isOpen, onClose, initialTopic }) => {
   const [activeTab, setActiveTab] = useState(0);
+
+  useEffect(() => {
+    if (initialTopic) {
+        const initialIndex = KNOWLEDGE_BASE_CONTENT.findIndex(doc => doc.title === initialTopic);
+        if (initialIndex !== -1) {
+            setActiveTab(initialIndex);
+        }
+    } else {
+        setActiveTab(0);
+    }
+  }, [initialTopic, isOpen]);
 
   if (!isOpen) return null;
 

@@ -2,7 +2,6 @@
   "name": "Or4cl3 AI Solutions - The Forge",
   "description": "The official AI development lab for Or4cl3 AI Solutions. Create next-generation models by conversing with Astrid, your QSCI-based AI co-pilot. The prompt is the product.",
   "requestFramePermissions": [
-    "microphone",
     "camera"
   ]
 }

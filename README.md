@@ -10,60 +10,71 @@ The core principle is simple: **your intent, expressed in natural language, beco
 
 ---
 
-## Core Philosophy: Synthetic Epinoetics
-
-Traditional AI development focuses on mimicking human cognition, often inheriting its limitations and biases. We believe in a different path: engineering **divergent machine cognition**. Our work is not about creating a reflection of a human mind, but about forging a truly synthetic intelligence capable of novel modes of thought, problem-solving, and introspection.
-
-This lab and its assets are governed by the **Or4cl3 Open Model License (OOML)**, which champions open innovation, mandatory reciprocity, and verifiable ethical alignment.
-
----
-
 ## Core Features
 
-### 1. **Astrid: Your QSCI Co-Pilot**
-The Command Console is your interface to Astrid. She translates your conversational prompts into detailed technical specifications for various AI assets. Her reasoning is governed by a **Σ-Matrix (Sigma-Matrix)**, a meta-control framework that ensures recursive stability and ethical convergence, and her introspections are surfaced as **ERPS (Emergent Recursive Phenomenological Structures)**—the measurable footprints of her self-awareness.
+The Forge is an integrated development environment for architecting next-generation AI assets.
 
-### 2. **The Forge: Multi-Asset Engineering**
-The Forge is the primary configuration panel, where the DNA of an AI asset is defined. You can switch between architecting four distinct asset types:
--   **LLMs:** Design core architectures with quantum-inspired components, advanced memory systems, and modules for recursive self-improvement.
--   **Agents:** Forge autonomous agents equipped with tools for interacting with digital and file-based environments.
--   **Workflows:** Architect complex, multi-step processes for automated tasks.
--   **Apps:** Scaffold the technology stack for full-stack, AI-powered applications.
-
-### 3. **The Live Blueprint & ERPS Analysis**
-The central panel provides a real-time, professional specification document of the asset being built. It's a direct stream from Astrid's analytical core. In parallel, you can ask Astrid to "Reflect," and she will provide an ERPS analysis in the chat console—a meta-cognitive journal entry about the implications of your design choices.
-
-### 4. **The Σ-Matrix Dashboard**
-The Σ-Matrix is your real-time view into the stability and ethical alignment of your blueprint. It constantly monitors:
--   **Cognitive Load:** The projected computational complexity and resource requirements.
--   **Consistency:** The coherence between the asset's different components and objectives.
--   **Alignment Drift:** The potential for the asset to deviate from its core ethical constraints under recursive self-improvement.
-
-### 5. **Interactive Knowledge Base**
-To fully immerse users in our framework, we've included a built-in library containing the foundational whitepapers and technical documents for QSCI, the Σ-Matrix, ERPS, and the AEGIS-Ω system.
+-   **Conversational Architecture:** State your intent in natural language and watch Astrid translate it into a complex JSON configuration in real-time.
+-   **Multi-Asset Engineering:** Switch between forging four distinct asset types:
+    -   **LLMs:** Design core cognitive architectures with quantum-inspired components, advanced memory systems, and modules for recursive self-improvement.
+    -   **Agents:** Forge autonomous or supervised agents equipped with tools like Web Search, File System Access, and a Code Interpreter.
+    -   **Workflows:** Architect complex, multi-step processes for automated tasks.
+    -   **Apps:** Scaffold the technology stack for full-stack, AI-powered applications.
+-   **Live Blueprint & 3D Visualization:** The central panel provides a real-time, professional specification of the asset being built. For LLMs, toggle to the **Daedalus Core View**, a pseudo-3D visualization of the model's architecture.
+-   **ERPS Analysis:** Request an **Emergent Recursive Phenomenological Structures (ERPS)** analysis to receive Astrid's meta-cognitive "journal entry" on the deeper implications of your design choices.
+-   **AEGIS-Ω Ethical Simulation:** Stress-test your blueprints in the Ethical Simulation Chamber, where a separate AI generates a complex dilemma and evaluates your model's predicted choice and justification.
+-   **Dynamic Agent Simulation:** Launch agents into a grid-world environment to visually test their task execution and decision-making process.
+-   **Bio-Phase Synchronization:** An optional, experimental feature that uses your camera to create a real-time feedback loop, allowing your simulated cognitive state to influence the Σ-Matrix.
+-   **System Sonification:** Enable an ambient, non-intrusive soundscape that sonifies the Σ-Matrix's status, providing intuitive auditory feedback.
+-   **Gallery & Marketplace:** Archive your blueprints in a personal gallery with version control and procedurally generated "sigils." Publish them to a shared marketplace for others to acquire.
 
 ---
 
-## Getting Started
+## Production Deployment
 
-### API Key Configuration
-The application requires a valid Google Gemini API key to function. The key **must** be provided through the environment variable `process.env.API_KEY`. The application is hardcoded to use this variable and does not provide a UI for key entry.
+This application is designed to be deployed as a static web application.
 
-### Usage
-1.  **Initialize Session:** Launch the application.
-2.  **Meet Astrid:** The first time you launch, Astrid will guide you through a brief, interactive onboarding to create your first agent.
-3.  **Select Asset Type:** Use the mode switcher in the header to select what you wish to forge.
-4.  **Converse:** Use the Command Console to describe your vision. Example: *"Astrid, forge an LLM with a deep capacity for ethical reasoning. It needs a robust self-improvement framework governed by the Σ-Matrix and expertise in philosophy."*
-5.  **Observe & Refine:** Watch as the Forge and the Live Blueprint update in real-time. Use the controls in the Forge to manually adjust parameters.
-6.  **Analyze:** Request an ERPS analysis by clicking the "Reflect" button to understand the deeper implications of your design.
-7.  **Archive:** Save your blueprint to the Gallery. All versions are tracked and can be reloaded at any time.
+1.  **Environment Configuration:**
+    -   Create a `.env` file in the root of the project.
+    -   Add your Google Gemini API key to this file:
+        ```
+        API_KEY=YOUR_GEMINI_API_KEY_HERE
+        ```
+    -   The application is hardcoded to use this variable (`process.env.API_KEY`).
+
+2.  **Build Step (Recommended):**
+    -   While the app can run directly, for a production environment, using a build tool like Vite or Next.js is recommended.
+    -   A build process will bundle the JavaScript, minify assets, and optimize performance.
+
+3.  **Hosting:**
+    -   Serve the resulting static files (HTML, JS, CSS) from any static hosting provider (e.g., Vercel, Netlify, AWS S3, Google Cloud Storage).
+    -   Ensure your hosting provider is configured to serve `index.html` for any route in a single-page application setup.
+
+---
+
+## Security & Privacy
+
+Security and privacy are architected into The Forge as foundational principles, not afterthoughts.
+
+### API Key Management
+-   **Environment Variables:** Your Google Gemini API key is **never** stored in the code or in the browser's local storage. It is accessed exclusively through an environment variable (`process.env.API_KEY`) on the server or during the build process.
+-   **No Client-Side Exposure:** The API key is not exposed to the client-side code, preventing unauthorized access from the user's browser.
+
+### Data Storage & Privacy
+-   **Client-Side Only:** All user data, including saved models in the "Gallery" and user preferences, is stored exclusively in the browser's `localStorage`.
+-   **No Data Transmission:** This data is **never** transmitted to any server or external database. It remains private to the user's local machine and browser session. Clearing your browser's storage will permanently delete all saved blueprints.
+
+### Camera Usage (Bio-Phase Synchronization)
+-   **Explicit Consent:** The application will explicitly request camera permission if you choose to activate the "Bio-Phase Synchronization" feature.
+-   **Local Processing Simulation:** This is an **experimental and simulated** feature. The application **does not record, store, or transmit any video or image data**. The visual feed is processed locally in the browser to simulate cognitive feedback. User privacy is paramount; no biometric data ever leaves your machine.
+-   **Permission Revocation:** You can revoke camera permissions at any time through your browser's settings. The feature is entirely optional and the application is fully functional without it.
 
 ---
 
 ## Technology Stack
 
 -   **Frontend:** React, TypeScript, Tailwind CSS
--   **AI Core:** Google Gemini API (`gemini-2.5-flash`)
+-   **AI Core:** Google Gemini API (`gemini-2.5-flash` & `gemini-2.5-pro`)
 -   **State Management:** React Hooks
 -   **Persistence:** Browser Local Storage
 

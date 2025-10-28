@@ -23,7 +23,7 @@ import { SystemSonification } from './features/SystemSonification';
 
 interface DashboardProps {
     savedModels: SavedModel[];
-    onSaveModel: (name: string, config: UnifiedConfig) => void;
+    onSaveModel: (name: string, config: UnifiedConfig, sigil: string) => void;
     onDeleteModel: (modelId: number) => void;
     theme: ThemeName;
     onThemeChange: (themeName: ThemeName) => void;
@@ -260,7 +260,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   const handleOnboardingAction = (actionType: 'save_onboarding_agent') => {
     if (onboardingStep === 4 && actionType === 'save_onboarding_agent') {
         const agentName = `${userName}'s Story-Engine`;
-        onSaveModel(agentName, config);
+        onSaveModel(agentName, config, ''); // Sigil not generated in onboarding
         setMessages(prev => [...prev, {id: Date.now(), sender: 'ai', text: `Confirmed. Blueprint for "${agentName}" has been archived.`}]);
         setOnboardingStep(5);
     }
@@ -437,7 +437,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
   };
 
   const handleAcquireAsset = (asset: MarketplaceAsset) => {
-    onSaveModel(asset.assetName, asset.config);
+    onSaveModel(asset.assetName, asset.config, asset.config.type); //FIXME: sigil?
     setIsMarketplaceOpen(false);
     setMarketplaceAssets(prev => prev.map(a => a.id === asset.id ? { ...a, downloads: (a.downloads || 0) + 1 } : a));
     setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: `Blueprint for "${asset.assetName}" has been acquired and added to your personal Gallery.` }]);

@@ -23,8 +23,8 @@ const App: React.FC = () => {
     setView('loading');
   };
 
-  // FIX: Update config type to UnifiedConfig to allow saving any asset type.
-  const handleSaveModel = (name: string, config: UnifiedConfig) => {
+  // FIX: Update config type to UnifiedConfig and add sigil.
+  const handleSaveModel = (name: string, config: UnifiedConfig, sigil: string) => {
     setSavedModels(prevModels => {
         const existingModelIndex = prevModels.findIndex(m => m.name === name);
         const newVersion = { config, savedAt: new Date().toISOString() };
@@ -34,6 +34,8 @@ const App: React.FC = () => {
             const updatedModels = [...prevModels];
             const existingModel = updatedModels[existingModelIndex];
             existingModel.versions.push(newVersion);
+            // Update sigil if it has changed
+            existingModel.sigil = sigil;
             return updatedModels;
         } else {
             // This is a new model
@@ -41,6 +43,7 @@ const App: React.FC = () => {
                 id: Date.now(),
                 name,
                 versions: [newVersion],
+                sigil,
             };
             return [...prevModels, newModel];
         }

@@ -29,7 +29,7 @@ export const BioPhaseMonitor: React.FC<BioPhaseMonitorProps> = ({ status, onTogg
         )}
       </button>
       {status.active && (
-        <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/80 backdrop-blur-md border border-[rgb(var(--color-border-val)/0.2)] rounded-lg p-3 shadow-2xl z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+        <div className="absolute top-full right-0 mt-2 w-56 bg-slate-900/80 backdrop-blur-md border border-[rgb(var(--color-border-val)/0.2)] rounded-lg p-3 shadow-2xl z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
           <h4 className="text-sm font-bold text-white mb-2">Bio-Phase Sync Active</h4>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
@@ -41,7 +41,9 @@ export const BioPhaseMonitor: React.FC<BioPhaseMonitorProps> = ({ status, onTogg
               <span className="font-mono text-cyan-300">{status.focus.toFixed(0)}%</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-2 italic">Your cognitive state is influencing the Σ-Matrix.</p>
+          <p className="text-xs text-slate-500 mt-2 italic border-t border-[rgb(var(--color-border-val)/0.2)] pt-2">
+            **Privacy Note:** This is a simulation. Camera processing is done locally in your browser. No video is recorded or transmitted.
+          </p>
         </div>
       )}
     </div>

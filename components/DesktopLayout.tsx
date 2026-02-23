@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Message, UnifiedConfig, ModelConfig, AgentConfig, WebSearchConfig, AgentTool, KnowledgeBaseTopic } from '../types';
 import { DOMAINS } from '../constants';
 import { ConfiguratorPanel } from './ConfiguratorPanel';
@@ -6,6 +6,7 @@ import { ChatPanel } from './ChatPanel';
 import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
 import { BlueprintPanel } from './BlueprintPanel';
 import { GenerativeUIPanel } from './GenerativeUIPanel';
+import { VisualizationPanel } from './VisualizationPanel';
 // FIX: Import the Card component.
 import { Card } from './ui/Card';
 
@@ -68,6 +69,7 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 }) => {
     
     const { forgeRef, blueprintRef, chatRef } = refs;
+    const [leftPanel, setLeftPanel] = useState<'forge' | 'visualize'>('forge');
 
     const renderConfigurator = () => {
         switch (config.type) {
@@ -115,9 +117,51 @@ export const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 
     return (
         <main className="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
-            <div className="lg:w-1/3 xl:w-1/4 h-full">
-                {renderConfigurator()}
+            {/* Left column with Forge/Visualize tabs */}
+            <div className="lg:w-1/3 xl:w-1/4 h-full flex flex-col gap-2">
+                {/* Tab switcher */}
+                <div
+                    className="flex rounded-lg overflow-hidden border flex-shrink-0"
+                    style={{ borderColor: 'var(--color-primary)', borderOpacity: 0.3 }}
+                >
+                    <button
+                        onClick={() => setLeftPanel('forge')}
+                        className="flex-1 py-2 px-3 text-xs font-bold tracking-widest uppercase transition-all duration-200 flex items-center justify-center gap-1.5"
+                        style={{
+                            backgroundColor: leftPanel === 'forge'
+                                ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)'
+                                : 'transparent',
+                            color: leftPanel === 'forge' ? 'var(--color-primary)' : 'var(--color-text-secondary, #64748b)',
+                            borderRight: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                        }}
+                    >
+                        <span>⚙️</span>
+                        <span>FORGE</span>
+                    </button>
+                    <button
+                        onClick={() => setLeftPanel('visualize')}
+                        className="flex-1 py-2 px-3 text-xs font-bold tracking-widest uppercase transition-all duration-200 flex items-center justify-center gap-1.5"
+                        style={{
+                            backgroundColor: leftPanel === 'visualize'
+                                ? 'color-mix(in srgb, var(--color-primary) 20%, transparent)'
+                                : 'transparent',
+                            color: leftPanel === 'visualize' ? 'var(--color-primary)' : 'var(--color-text-secondary, #64748b)',
+                        }}
+                    >
+                        <span>🔮</span>
+                        <span>VISUALIZE</span>
+                    </button>
+                </div>
+
+                {/* Panel content */}
+                <div className="flex-grow overflow-hidden">
+                    {leftPanel === 'forge' ? renderConfigurator() : (
+                        <VisualizationPanel config={config} ref={null} />
+                    )}
+                </div>
             </div>
+
+            {/* Right column: Blueprint + Chat */}
             <div className="lg:w-2/3 xl:w-3/4 flex flex-col gap-4 h-full">
                 <BlueprintPanel
                     ref={blueprintRef}

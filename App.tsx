@@ -4,6 +4,7 @@ import type { SavedModel, ModelConfig, ThemeName, UnifiedConfig } from './types'
 import { LandingPage } from './components/LandingPage';
 import { LoadingScreen } from './components/LoadingScreen';
 import { Dashboard } from './components/Dashboard';
+import { WelcomeModal } from './components/WelcomeModal';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
 type View = 'landing' | 'loading' | 'dashboard';
@@ -12,6 +13,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('landing');
   const [savedModels, setSavedModels] = useLocalStorage<SavedModel[]>('or4cl3-models', []);
   const [theme, setTheme] = useLocalStorage<ThemeName>('or4cl3-theme', 'oracl3');
+  const [welcomed, setWelcomed] = useLocalStorage<boolean>('or4cl3-welcomed', false);
 
   useEffect(() => {
     const body = document.body;
@@ -82,7 +84,17 @@ const App: React.FC = () => {
     }
   };
 
-  return <div className="min-h-screen font-sans">{renderView()}</div>;
+  return (
+    <div className="min-h-screen font-sans">
+      {renderView()}
+      {view !== 'loading' && (
+        <WelcomeModal
+          isOpen={!welcomed}
+          onClose={() => setWelcomed(true)}
+        />
+      )}
+    </div>
+  );
 };
 
 export default App;

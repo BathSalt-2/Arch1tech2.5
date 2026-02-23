@@ -8,6 +8,7 @@ import { Card } from './ui/Card';
 import { AgentConfiguratorPanel } from './AgentConfiguratorPanel';
 import { BlueprintPanel } from './BlueprintPanel';
 import { GenerativeUIPanel } from './GenerativeUIPanel';
+import { VisualizationPanel } from './VisualizationPanel';
 
 interface LayoutRefs {
     forgeRef: React.RefObject<HTMLDivElement>;
@@ -131,11 +132,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                         </Card>;
                 }
             case 'visualize':
-                 return (
-                    <BlueprintPanel
-                        ref={blueprintRef}
-                        blueprintText={blueprintText}
-                        isLoading={isBlueprintLoading}
+                return (
+                    <VisualizationPanel
+                        ref={null}
                         config={config}
                     />
                 );

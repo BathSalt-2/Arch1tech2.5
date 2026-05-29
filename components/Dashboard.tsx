@@ -20,6 +20,7 @@ import { PublishModal } from './PublishModal';
 import { EthicalSimModal } from './EthicalSimModal';
 import { AgentSimModal } from './AgentSimModal';
 import { SystemSonification } from './features/SystemSonification';
+import { SyntheticDataPanel } from './SyntheticDataPanel';
 
 interface DashboardProps {
     savedModels: SavedModel[];
@@ -116,6 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
 
   const [isEthicalSimOpen, setIsEthicalSimOpen] = useState(false);
   const [isAgentSimOpen, setIsAgentSimOpen] = useState(false);
+  const [showSDG, setShowSDG] = useState(false);
   const [isSonificationAudible, setIsSonificationAudible] = useState(false);
 
   const forgeRef = useRef<HTMLDivElement>(null);
@@ -534,6 +536,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ savedModels, onSaveModel, 
       <AgentSimModal isOpen={isAgentSimOpen} onClose={() => setIsAgentSimOpen(false)} config={config as AgentConfig} onSimulate={(task) => generateAgentSimulationStream(config as AgentConfig, task)} />
       <SystemSonification status={systemStatus} isAudible={isSonificationAudible} />
       
+       {!showSDG && (
+         <button
+           onClick={() => setShowSDG(true)}
+           title="Data Forge - Synthetic Dataset Generator"
+           className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 px-4 py-2.5 rounded-xl text-sm font-medium backdrop-blur-sm transition-all shadow-lg shadow-cyan-500/10"
+         >
+           ⚗️ Data Forge
+         </button>
+       )}
+       {showSDG && <SyntheticDataPanel onClose={() => setShowSDG(false)} />}
        {onboardingStep > -1 && (
         <OnboardingGuide 
           step={onboardingStep}

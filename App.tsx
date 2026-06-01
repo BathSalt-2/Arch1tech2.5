@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-// FIX: Import UnifiedConfig to handle saving all asset types.
 import type { SavedModel, ModelConfig, ThemeName, UnifiedConfig } from './types';
 import { LandingPage } from './components/LandingPage';
 import { LoadingScreen } from './components/LoadingScreen';
 import { Dashboard } from './components/Dashboard';
 import { WelcomeModal } from './components/WelcomeModal';
+import SkillsLibraryTab from './components/SkillsLibraryTab';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
-type View = 'landing' | 'loading' | 'dashboard';
+type View = 'landing' | 'loading' | 'dashboard' | 'skills';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('landing');
   const [savedModels, setSavedModels] = useLocalStorage<SavedModel[]>('or4cl3-models', []);
   const [theme, setTheme] = useLocalStorage<ThemeName>('or4cl3-theme', 'oracl3');
   const [welcomed, setWelcomed] = useLocalStorage<boolean>('or4cl3-welcomed', false);
+  const [astridInput, setAstridInput] = useState('');
 
   useEffect(() => {
     const body = document.body;
@@ -25,22 +26,18 @@ const App: React.FC = () => {
     setView('loading');
   };
 
-  // FIX: Update config type to UnifiedConfig and add sigil.
   const handleSaveModel = (name: string, config: UnifiedConfig, sigil: string) => {
     setSavedModels(prevModels => {
         const existingModelIndex = prevModels.findIndex(m => m.name === name);
         const newVersion = { config, savedAt: new Date().toISOString() };
 
         if (existingModelIndex > -1) {
-            // Model with this name exists, add a new version
             const updatedModels = [...prevModels];
             const existingModel = updatedModels[existingModelIndex];
             existingModel.versions.push(newVersion);
-            // Update sigil if it has changed
             existingModel.sigil = sigil;
             return updatedModels;
         } else {
-            // This is a new model
             const newModel: SavedModel = {
                 id: Date.now(),
                 name,
@@ -60,7 +57,7 @@ const App: React.FC = () => {
     if (view === 'loading') {
       const timer = setTimeout(() => {
         setView('dashboard');
-      }, 3000); // Simulate loading time
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [view]);
@@ -78,6 +75,13 @@ const App: React.FC = () => {
                   onDeleteModel={handleDeleteModel}
                   theme={theme}
                   onThemeChange={setTheme}
+                />;
+      case 'skills':
+        return <SkillsLibraryTab 
+                  onActivateSkill={(name, prompt) => {
+                    setAstridInput(`${name}: ${prompt}`);
+                    // Could transition to astrid view here if you have one
+                  }} 
                 />;
       default:
         return <LandingPage onEnter={handleEnter} />;
